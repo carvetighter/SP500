@@ -5,7 +5,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>0873b6b1-0cf5-42e7-9a90-5b1060e96a2c</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Main.py</StartupFile>
+    <StartupFile>
+    </StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -24,7 +25,9 @@
   <ItemGroup>
     <Compile Include="DataPrep.py" />
     <Compile Include="DataVisAndEval.py" />
-    <Compile Include="Main.py" />
+    <Compile Include="Main.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="sp_500_20170607.py" />
     <Compile Include="SqlMethods.py" />
     <Compile Include="subplot_demo.py" />
