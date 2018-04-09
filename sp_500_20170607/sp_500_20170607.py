@@ -1030,7 +1030,7 @@ def CreateVisualization(m_datetime_start = datetime(1970, 1, 1), m_datetime_stop
     string_symbol_sp500 = '^GSPC'
 
     # path variables
-    string_path = 'C:\\Users\\Frosty SB 02\\Documents\\Development\\Projects.Active\\Finance\\sp_500_20170607\\'
+    string_path = 'C:\\Users\\Frosty SB 02\\Documents\\Development\\Python\\Finance\\sp_500_20170607\\'
     string_path += 'visualizations\\'
     string_file = 'sp500_visualization_'  + m_datetime_stop.strftime('%Y-%m-%d %H_%M_%S') + '.png'
 
@@ -1316,7 +1316,7 @@ def Main(m_list_user):
         GetDataMarketStatus(m_list_user = m_list_user)
 
     #------------------------------------------------------------------------------------------------------------------------------------------------------#
-    # get data and market status
+    # conduct analysis
     #------------------------------------------------------------------------------------------------------------------------------------------------------#
 
     if bool_conduct_analysis == True:
