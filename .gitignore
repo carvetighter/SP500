@@ -3,7 +3,6 @@
 
 # directories to ignore
 code/__pycache__
-code/.vs
 
 # Main file w/ username and passwords
 code/sp_500_init.py
