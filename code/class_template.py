@@ -1,107 +1,99 @@
 '''
-Sp500 class file
-
-File containtes four classes:
-Sp500 base class -> used for containers and setup for child classes
-Sp500 data collection class -> used to collect the data from yahoo finance and a local sql database
-Sp500 analysis class -> conducts the analysis between the moving averages
-Sp500 visualizations class -> conducts the visualizations of the analysis
+Class template
 '''
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 #
 # File / Package Import
 #
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
-from datetime import datetime
-from datetime import time
-from datetime import timedelta
-from datetime import timezone
-import warnings
-from matplotlib import pyplot
-from matplotlib import style
-import pandas
-import numpy
-from pandas_datareader import data
-import fix_yahoo_finance
-from SqlMethods import SqlMethods
+import collections
 
-# ignore warnings
-warnings.simplefilter('ignore')
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+#
+# Classes
+#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
-class Sp500Base(object):
+class ClassName(object):
     '''
-    Base class for analysis; containes all the containers
+    This class makes it easier to connect and work with a sql server.  The list of methods below are
+    firther defined in the methods themselves
 
     Requirements:
-    package SqlMethods
-    package pandas
+    package pymssql
+    package collections
+    packace xml.dom.minidom
 
     Methods:
-    ??
+    gen_connection()
+        creates connection to the database
+
+    method_name()
+        ....
 
     Attributes:
-    ??
+    bool_is_connected
+        flag to determine if the connection is open or closed
+            True -> connection is open
+            False -> connection is closed
     '''
 
     #--------------------------------------------------------------------------#
     # constructor
     #--------------------------------------------------------------------------#
 
-    def __init__(self, c_list_sql_up, c_bool_verbose):
+    def __init__(self, list_conn_param):
         '''
-        class construtor;
+        this method initialized the class; if a list is paassed and has all the paramaters a connection will
+        be generated to the sql server
 
         Requirements:
-        package SqlMethods
-        package pandas
+        package pymssql
 
         Inputs:
-        c_list_sql_up
+        list_conn_param
         Type: list
-        Desc: user and password for sql database
-        c_list_sql_up[0] -> type: string; user name
-        c_list_sql_up[1] -> type: string; password
+        Desc: the paramaters to generate the connection to the sql server
+        list_conn_param[0] -> type: string; user name
+        list_conn_param[1] -> type: string; host or server
+        list_conn_param[2] -> type: string; user password
+        list_conn_param[3] -> type: string; database name
 
         Important Info:
-        1. ??
+        1. the paramaters must use r'xxxxx' as raw strings but is used in relational expressions,
+            eg. m_string_user = r'user name'
 
-        Attributes:
-        ??
+        Objects and Properties:
+        list_conn
+        Type: list
+        Desc: the connection paramaters
+        _list_conn[0] -> type: boolean; True of a connection was generated; False if not
+        _list_conn[1] -> type: pymssql connection; the connection object to the sql server
+
+        bool_is_connected
+        Type: boolean
+        Desc: flag to help the user to determine if the connection is generated
         '''
-        #--------------------------------------------------------------------------#
-        # sql db connection attributes
-        #--------------------------------------------------------------------------#
 
-        self.string_sql_db = r'Finance'
-        self.string_sql_server = r'localhost\SQLEXPRESS'
-        self.sql_conn = SqlMethods(
-            [c_list_sql_up[0], self.string_sql_server, c_list_sql_up[1], self.string_sql_db])
+        # objects for the class
+        self._list_conn = list()
+        self._dict_flags = {}
+        self.bool_is_connected = False
 
-        #--------------------------------------------------------------------------#
-        # sql db data attributes
-        #--------------------------------------------------------------------------#
-
-        self.string_sql_table_data = 'sp500.data'
-        self.string_sql_table_analysis = 'sp500.analysis'
-        dict_sp500_tables = {
-            'data':{
-                'col_dtype':['date', 'float', 'varchar(10)', 'varchar(500)', 'float', 'float', 'float', 
-                    'float', 'float', 'float', 'float'],
-                'col_names':['date_data', 'float_close', 'string_in_market', 'string_trigger', 'float_50_sma',
-                    'float_200_sma', 'float_delta_50_200', 'float_delta_hl', 'float_velocity', 'float_accel']
-            },
-            'analysis':{
-                'col_dtype':['date', 'date', 'date', 'float', 'int', 'int', 'int', 'int', 'varchar(10)', 'float', 'float', 'float',
-                    'float', 'float', 'varchar(50)'],
-                'col_names':['date_analyis', 'date_stop', 'date_start', 'dollar_start', 'int_days_range',
-                    'int_days_in_market', 'int_days_good', 'int_days_bad', 'string_in_market', 'float_ann_fee',
-                    'dollar_gm_with_fee', 'dollar_man_fee', 'dollar_buy_hold', 'dollar_gm_no_fee', 'string_symbol']
-            }
-        }
+        # test pamater list to generate the connection
+        if len(list_conn_param) == 4 and isinstance(list_conn_param, collections.Sequence) and \
+                not isinstance(list_conn_param, str):
+            self.gen_connection(
+                m_string_user = list_conn_param[0],
+                m_string_host = list_conn_param[1],
+                m_string_pswd = list_conn_param[2],
+                m_string_db_name = list_conn_param[3])
 
     #--------------------------------------------------------------------------#
     # callable methods
@@ -214,14 +206,12 @@ class Sp500Base(object):
     # supportive methods
     #--------------------------------------------------------------------------#
 
-    # ??
+    def _update_flags(self, *args):
+        '''
+        '''
+        self._dict_flags = {'bool_is_connected':self._list_conn[0]}
 
-
-class Sp500Data(Sp500Base):
-    pass
-
-class Sp500Analysis(Sp500Base):
-    pass
-
-class Sp500Visualizations(Sp500Base):
-    pass
+        for string_flag in args:
+            if string_flag in self._dict_flags.keys():
+                if string_flag == 'bool_is_connected':
+                    self.bool_is_connected = self._dict_flags[string_flag]
