@@ -53,7 +53,7 @@ class Sp500Base(object):
 
     def __init__(self, c_list_sql_up, c_bool_verbose):
         '''
-        class construtor;
+        base class construtor
 
         Requirements:
         package SqlMethods
@@ -65,6 +65,10 @@ class Sp500Base(object):
         Desc: user and password for sql database
         c_list_sql_up[0] -> type: string; user name
         c_list_sql_up[1] -> type: string; password
+
+        c_bool_verbose
+        Type: boolean
+        Desc: flag if verbose output desired
 
         Important Info:
         1. ??
@@ -85,29 +89,142 @@ class Sp500Base(object):
         # sql db data attributes
         #--------------------------------------------------------------------------#
 
-        self.string_sql_table_data = 'sp500.data'
-        self.string_sql_table_analysis = 'sp500.analysis'
-        dict_sp500_tables = {
+        self.dict_sp500_tables = {
             'data':{
-                'col_dtype':['date', 'float', 'varchar(10)', 'varchar(500)', 'float', 'float', 'float', 
-                    'float', 'float', 'float', 'float'],
-                'col_names':['date_data', 'float_close', 'string_in_market', 'string_trigger', 'float_50_sma',
-                    'float_200_sma', 'float_delta_50_200', 'float_delta_hl', 'float_velocity', 'float_accel']
-            },
+                'table_name':'sp500.data',
+                'col_dtype':['date', 'float', 'varchar(10)', 'varchar(500)', 'float', 'float', 'float', 'float', 'float',
+                    'float', 'float'],
+                'col_names':['date_date', 'float_close', 'string_in_market', 'string_trigger', 'float_50_sma',
+                    'float_200_sma', 'float_delta_50_200', 'float_delta_hl', 'float_delta_div_hl', 'float_velocity',
+                    'float_accel']},
             'analysis':{
+                'table_name':'sp500.analysis',
                 'col_dtype':['date', 'date', 'date', 'float', 'int', 'int', 'int', 'int', 'varchar(10)', 'float', 'float', 'float',
                     'float', 'float', 'varchar(50)'],
-                'col_names':['date_analyis', 'date_stop', 'date_start', 'dollar_start', 'int_days_range',
+                'col_names':['date_analysis', 'date_start', 'date_stop', 'dollar_start', 'int_days_range',
                     'int_days_in_market', 'int_days_good', 'int_days_bad', 'string_in_market', 'float_ann_fee',
-                    'dollar_gm_with_fee', 'dollar_man_fee', 'dollar_buy_hold', 'dollar_gm_no_fee', 'string_symbol']
-            }
-        }
+                    'dollar_gm_with_fee', 'dollar_man_fee', 'dollar_buy_hold', 'dollar_gm_no_fee',
+                    'string_symbol']}}
+
+        #--------------------------------------------------------------------------#
+        # yahoo finance attributes
+        #--------------------------------------------------------------------------#
+
+        self.dt_yahoo_start = datetime(1970, 1, 1)
+        self.dt_yahoo_stop = datetime.now()
+        self.string_sym_sp500 = '^GSPC'
+        self.bool_query_yahoo_finance = True
+
+        #--------------------------------------------------------------------------#
+        # data containers
+        #--------------------------------------------------------------------------#
+
+        self.df_raw_yahoo = None
+        self.df_analysis = None
+
+        #--------------------------------------------------------------------------#
+        # other attributes
+        #--------------------------------------------------------------------------#
+
+        self.bool_verbose = c_bool_verbose
 
     #--------------------------------------------------------------------------#
     # callable methods
     # 
     # methods that directly support callable methods should
     # be underneath method
+    #--------------------------------------------------------------------------#
+
+    def check_sql_db_setup(self):
+        '''
+        this method checks the sql database for the correct structure
+
+        Requirements:
+        package SqlMethods
+
+        Inputs:
+        None
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: tuple
+        Desc: if the database is structured for the analysis and any errors that
+            are detected
+        tuple[0] -> type: boolean; True of db is setup for the analysis, False if not
+        tuple[1] -> type: string; if tuple[0] is True then empty string; if tuple[0] is
+            False than any errors that are detected; errors are separated by double
+            pipes '||'
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        bool_return = True
+        list_errors = list()
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # test for connection and begin looping through tables
+        #--------------------------------------------------------------------------------#
+
+        if self.sql_conn.bool_is_connected:
+            for string_key in self.dict_sp500_tables:
+                dict_table = self.dict_sp500_tables.get(string_key)
+
+                #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                # stopped here
+                #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        else:
+            list_errors.append('no connection to sql database')
+            bool_return = False
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # sectional comment
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # variable / object cleanup
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        return bool_return, '||'.join(list_errors)
+
+    
+    #--------------------------------------------------------------------------#
+    # supportive methods
     #--------------------------------------------------------------------------#
 
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
@@ -209,10 +326,6 @@ class Sp500Base(object):
         #--------------------------------------------------------------------------------#
 
         pass
-
-    #--------------------------------------------------------------------------#
-    # supportive methods
-    #--------------------------------------------------------------------------#
 
     # ??
 

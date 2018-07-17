@@ -176,7 +176,6 @@ def Setup(m_sql_conn, list_sql_tables):
                                       'dollar_gm_with_fee', 'dollar_man_fee', 'dollar_buy_hold', 'dollar_gm_no_fee', 'string_symbol']
     list_sql_col_dt_sp500_analysis = ['date', 'date', 'date', 'float', 'int', 'int', 'int', 'int', 'varchar(10)', 'float', 'float', 'float',
                                    'float', 'float', 'varchar(50)']
-
     dict_sql_table_col_dt = {'dbo.sp500_data':[list_sql_col_names_sp500_data, list_sql_col_dt_sp500_data],
                           'dbo.sp500_analysis':[list_sql_col_names_sp500_analysis, list_sql_col_dt_sp500_analysis]}
 
