@@ -154,11 +154,13 @@ class Sp500Base(object):
         object
         Type: tuple
         Desc: if the database is structured for the analysis and any errors that
-            are detected
+            are detected; if tuple[0] is True the tables exists and the columns names are
+            the same as the dictionary
         tuple[0] -> type: boolean; True of db is setup for the analysis, False if not
         tuple[1] -> type: string; if tuple[0] is True then empty string; if tuple[0] is
             False than any errors that are detected; errors are separated by double
-            pipes '||'
+            pipes '||'; in error message ':' splits error flag "table ??" or "conn"; this willl make
+            it easier to find the table name
         '''
 
         #--------------------------------------------------------------------------------#
@@ -177,8 +179,11 @@ class Sp500Base(object):
         # variables declarations
         #--------------------------------------------------------------------------------#
 
-        bool_return = True
+        bool_return = False
+        bool_columns = False
+        bool_table_exists = False
         list_errors = list()
+        list_bool_return = list()
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -195,26 +200,29 @@ class Sp500Base(object):
         if self.sql_conn.bool_is_connected:
             for string_key in self.dict_sp500_tables:
                 dict_table = self.dict_sp500_tables.get(string_key)
+                bool_table_exists = self.sql_conn.table_exists(dict_table.get('table_name'))
+                if bool_table_exists:
+                    set_columns = set(self.sql_conn.get_table_columns(dict_table.get('table_name')))
+                    set_dict_columns = set(dict_table.get('col_names'))
+                    if set_columns == set_dict_columns:
+                        bool_columns = True
+                    else:
+                        list_errors.append('table ' + dict_table.get('table_name') + ':columns to not match' )
+                else:
+                    list_errors.append('table ' + dict_table.get('table_name') + ':does not exist')
 
-                #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                # stopped here
-                #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+                list_bool_return.append(bool_table_exists & bool_columns)
         else:
-            list_errors.append('no connection to sql database')
+            list_errors.append('conn:no connection to sql database')
             bool_return = False
-
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # sectional comment
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-
+        
         #--------------------------------------------------------------------------------#
-        # variable / object cleanup
+        # for each table determine the return boolean
         #--------------------------------------------------------------------------------#
+
+        if list_bool_return:
+            if set(list_bool_return) == {True}:
+                bool_return = True
 
         #--------------------------------------------------------------------------------#
         # return value
@@ -222,7 +230,6 @@ class Sp500Base(object):
 
         return bool_return, '||'.join(list_errors)
 
-    
     #--------------------------------------------------------------------------#
     # supportive methods
     #--------------------------------------------------------------------------#
