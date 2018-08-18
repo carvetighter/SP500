@@ -336,7 +336,6 @@ class Sp500Base(object):
 
     # ??
 
-
 class Sp500Data(Sp500Base):
     pass
 
