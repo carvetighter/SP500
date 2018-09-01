@@ -24,6 +24,8 @@ import warnings
 from matplotlib import pyplot
 from matplotlib import style
 import pandas
+# fix for is_list_like error
+pandas.core.common.is_list_like = pandas.api.types.is_list_like
 import numpy
 from pandas_datareader import data
 import fix_yahoo_finance
@@ -83,7 +85,10 @@ class Sp500Base(object):
         self.string_sql_db = r'Finance'
         self.string_sql_server = r'localhost\SQLEXPRESS'
         self.sql_conn = SqlMethods(
-            [c_list_sql_up[0], self.string_sql_server, c_list_sql_up[1], self.string_sql_db])
+            [c_list_sql_up[0],
+            self.string_sql_server,
+            c_list_sql_up[1],
+            self.string_sql_db])
 
         #--------------------------------------------------------------------------#
         # sql db data attributes
@@ -105,6 +110,7 @@ class Sp500Base(object):
                     'int_days_in_market', 'int_days_good', 'int_days_bad', 'string_in_market', 'float_ann_fee',
                     'dollar_gm_with_fee', 'dollar_man_fee', 'dollar_buy_hold', 'dollar_gm_no_fee',
                     'string_symbol']}}
+        self.tup_sql_db_setup = (False, 'not checked')
 
         #--------------------------------------------------------------------------#
         # yahoo finance attributes
@@ -121,7 +127,17 @@ class Sp500Base(object):
 
         self.df_raw_yahoo = None
         self.df_analysis = None
+        self.df_db_data = None
 
+        #--------------------------------------------------------------------------#
+        # analysis attributes
+        #--------------------------------------------------------------------------#
+
+        datetime_start = datetime(1995, 1, 1)
+        datetime_stop = datetime.now()
+        float_money = 3000
+        float_annual_fee = 0.02
+        
         #--------------------------------------------------------------------------#
         # other attributes
         #--------------------------------------------------------------------------#
@@ -200,20 +216,21 @@ class Sp500Base(object):
         if self.sql_conn.bool_is_connected:
             for string_key in self.dict_sp500_tables:
                 dict_table = self.dict_sp500_tables.get(string_key)
-                bool_table_exists = self.sql_conn.table_exists(dict_table.get('table_name'))
+                string_table = dict_table.get('table_name')
+                bool_table_exists = self.sql_conn.table_exists(string_table)
                 if bool_table_exists:
-                    set_columns = set(self.sql_conn.get_table_columns(dict_table.get('table_name')))
+                    set_columns = set(self.sql_conn.get_table_columns(string_table))
                     set_dict_columns = set(dict_table.get('col_names'))
                     if set_columns == set_dict_columns:
                         bool_columns = True
                     else:
-                        list_errors.append('table ' + dict_table.get('table_name') + ':columns to not match' )
+                        list_errors.append('table ' + dict_table.get('table_name') + ' columns to not match' )
                 else:
-                    list_errors.append('table ' + dict_table.get('table_name') + ':does not exist')
+                    list_errors.append('table ' + dict_table.get('table_name') + ' does not exist')
 
                 list_bool_return.append(bool_table_exists & bool_columns)
         else:
-            list_errors.append('conn:no connection to sql database')
+            list_errors.append('no connection to sql database')
             bool_return = False
         
         #--------------------------------------------------------------------------------#
