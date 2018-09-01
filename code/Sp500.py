@@ -27,8 +27,8 @@ import pandas
 # fix for is_list_like error
 pandas.core.common.is_list_like = pandas.api.types.is_list_like
 import numpy
-from pandas_datareader import data
-import fix_yahoo_finance
+# from pandas_datareader import data
+# import fix_yahoo_finance
 from SqlMethods import SqlMethods
 
 # ignore warnings
@@ -81,7 +81,7 @@ class Sp500Base(object):
         #--------------------------------------------------------------------------#
         # sql db connection attributes
         #--------------------------------------------------------------------------#
-
+        
         self.string_sql_db = r'Finance'
         self.string_sql_server = r'localhost\SQLEXPRESS'
         self.sql_conn = SqlMethods(
@@ -219,15 +219,21 @@ class Sp500Base(object):
                 string_table = dict_table.get('table_name')
                 bool_table_exists = self.sql_conn.table_exists(string_table)
                 if bool_table_exists:
-                    set_columns = set(self.sql_conn.get_table_columns(string_table))
-                    set_dict_columns = set(dict_table.get('col_names'))
-                    if set_columns == set_dict_columns:
-                        bool_columns = True
+                    list_table_columns = self.sql_conn.get_table_columns(string_table)
+                    if list_table_columns[0]:
+                        set_columns = set(list_table_columns[1])
+                        set_dict_columns = set(dict_table.get('col_names'))
+                        if set_columns == set_dict_columns:
+                            bool_columns = True
+                        else:
+                            list_errors.append('table ' + dict_table.get('table_name') + ' columns to not match' )
                     else:
-                        list_errors.append('table ' + dict_table.get('table_name') + ' columns to not match' )
+                        string_error_db_check_00 = 'error in reteiving columns for table {0}'
+                        list_errors.append(string_error_db_check_00.format(string_table))
                 else:
-                    list_errors.append('table ' + dict_table.get('table_name') + ' does not exist')
-
+                    string_error_db_check_01 = 'table {0} does not exist'
+                    list_errors.append(string_error_db_check_01.format(string_table))
+                                    
                 list_bool_return.append(bool_table_exists & bool_columns)
         else:
             list_errors.append('no connection to sql database')
