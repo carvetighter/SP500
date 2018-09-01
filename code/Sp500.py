@@ -27,8 +27,8 @@ import pandas
 # fix for is_list_like error
 pandas.core.common.is_list_like = pandas.api.types.is_list_like
 import numpy
-# from pandas_datareader import data
-# import fix_yahoo_finance
+from pandas_datareader import data
+import fix_yahoo_finance
 from SqlMethods import SqlMethods
 
 # ignore warnings
@@ -43,7 +43,9 @@ class Sp500Base(object):
     package pandas
 
     Methods:
-    ??
+    check_sql_db_setup()
+        - checks if the table exists and the columns are the same as the dictionary
+          in the constructor
 
     Attributes:
     ??
@@ -73,7 +75,8 @@ class Sp500Base(object):
         Desc: flag if verbose output desired
 
         Important Info:
-        1. ??
+        1. format for list to connec to sql db
+            [r'<user name>', r'<sql server name>', r'<user password>', r'<database name>']
 
         Attributes:
         ??
@@ -95,15 +98,13 @@ class Sp500Base(object):
         #--------------------------------------------------------------------------#
 
         self.dict_sp500_tables = {
-            'data':{
-                'table_name':'sp500.data',
+            'sp500.data':{
                 'col_dtype':['date', 'float', 'varchar(10)', 'varchar(500)', 'float', 'float', 'float', 'float', 'float',
                     'float', 'float'],
                 'col_names':['date_date', 'float_close', 'string_in_market', 'string_trigger', 'float_50_sma',
                     'float_200_sma', 'float_delta_50_200', 'float_delta_hl', 'float_delta_div_hl', 'float_velocity',
                     'float_accel']},
-            'analysis':{
-                'table_name':'sp500.analysis',
+            'sp500.analysis':{
                 'col_dtype':['date', 'date', 'date', 'float', 'int', 'int', 'int', 'int', 'varchar(10)', 'float', 'float', 'float',
                     'float', 'float', 'varchar(50)'],
                 'col_names':['date_analysis', 'date_start', 'date_stop', 'dollar_start', 'int_days_range',
@@ -175,8 +176,7 @@ class Sp500Base(object):
         tuple[0] -> type: boolean; True of db is setup for the analysis, False if not
         tuple[1] -> type: string; if tuple[0] is True then empty string; if tuple[0] is
             False than any errors that are detected; errors are separated by double
-            pipes '||'; in error message ':' splits error flag "table ??" or "conn"; this willl make
-            it easier to find the table name
+            pipes '||'
         '''
 
         #--------------------------------------------------------------------------------#
@@ -196,10 +196,8 @@ class Sp500Base(object):
         #--------------------------------------------------------------------------------#
 
         bool_return = False
-        bool_columns = False
-        bool_table_exists = False
         list_errors = list()
-        list_bool_return = list()
+        set_bool_return = set()
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -214,38 +212,198 @@ class Sp500Base(object):
         #--------------------------------------------------------------------------------#
 
         if self.sql_conn.bool_is_connected:
-            for string_key in self.dict_sp500_tables:
-                dict_table = self.dict_sp500_tables.get(string_key)
-                string_table = dict_table.get('table_name')
+            for string_table in self.dict_sp500_tables:
+
+                #--------------------------------------------------------------------------------#
+                # set table boolean check and get table information
+                #--------------------------------------------------------------------------------#
+
+                bool_table_check = False
+                dict_table = self.dict_sp500_tables.get(string_table, None)
                 bool_table_exists = self.sql_conn.table_exists(string_table)
+                
+                #--------------------------------------------------------------------------------#
+                # begin table check
+                #--------------------------------------------------------------------------------#
+
                 if bool_table_exists:
                     list_table_columns = self.sql_conn.get_table_columns(string_table)
                     if list_table_columns[0]:
                         set_columns = set(list_table_columns[1])
                         set_dict_columns = set(dict_table.get('col_names'))
                         if set_columns == set_dict_columns:
-                            bool_columns = True
+                            bool_table_check = True
                         else:
-                            list_errors.append('table ' + dict_table.get('table_name') + ' columns to not match' )
+                            string_error_db_check_02 = 'table {0} columns do not match'
+                            list_errors.append(string_error_db_check_02.format(string_table))
                     else:
-                        string_error_db_check_00 = 'error in reteiving columns for table {0}'
+                        string_error_db_check_00 = 'table {0} error reteiving columns'
                         list_errors.append(string_error_db_check_00.format(string_table))
                 else:
                     string_error_db_check_01 = 'table {0} does not exist'
                     list_errors.append(string_error_db_check_01.format(string_table))
-                                    
-                list_bool_return.append(bool_table_exists & bool_columns)
+
+                # add boolean to set for check
+                set_bool_return.add(bool_table_check)
         else:
             list_errors.append('no connection to sql database')
             bool_return = False
-        
+
         #--------------------------------------------------------------------------------#
         # for each table determine the return boolean
         #--------------------------------------------------------------------------------#
 
-        if list_bool_return:
-            if set(list_bool_return) == {True}:
-                bool_return = True
+        if set_bool_return == {True}:
+            bool_return = True
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        return bool_return, '||'.join(list_errors)
+
+    def create_sql_db_tables(self, m_string_sql_db_errors):
+        '''
+        this method creates the sql database tables based on the error string passed
+
+        Requirements:
+        package SqlMethods
+
+        Inputs:
+        m_string_sql_db_errors
+        Type: string
+        Desc: error string, each error is seperated by string double pipe, '||'
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: tuple
+        Desc: 
+        tuple[0] -> type: boolean; True of db is setup for the analysis, False if not
+        tuple[1] -> type: string; if tuple[0] is True then empty string; if tuple[0] is
+            False than any errors that are detected; errors are separated by double
+            pipes '||';
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # iterator declarations
+        #--------------------------------------------------------------------------------#
+
+        list_errors = m_string_sql_db_errors.split('||')
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        bool_return = False
+        bool_table = False
+        list_errors = list()
+        set_bool_return = set()
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # test for connection and begin looping through tables
+        #--------------------------------------------------------------------------------#
+
+        series_db_errors = pandas.Series(data = list_errors)
+        series_tables = series_db_errors.apply(
+            lambda x: x.split(' ')[1])
+        set_tables = set(series_tables.values)
+        if 'connection' in set_tables:
+            set_tables.remove('connection')
+        del series_tables, series_db_errors
+
+        #--------------------------------------------------------------------------------#
+        # loop through tables and create table
+        #--------------------------------------------------------------------------------#
+
+        if self.sql_conn.bool_is_connected:
+            for string_table in set_tables:
+
+                #--------------------------------------------------------------------------------#
+                # get table dictionary
+                #--------------------------------------------------------------------------------#
+
+                bool_table = False
+                dict_table = self.dict_sp500_tables.get(string_table, None)
+
+                #--------------------------------------------------------------------------------#
+                # test to ensure table is in dictionary
+                #--------------------------------------------------------------------------------#
+
+                if isinstance(dict_table, dict):
+                    bool_table_dictionary = True
+                else:
+                    bool_table_dictionary = False
+
+                #--------------------------------------------------------------------------------#
+                # create tables
+                #--------------------------------------------------------------------------------#
+
+                if bool_table_dictionary:
+
+                    #--------------------------------------------------------------------------------#
+                    # create list to create columns
+                    #--------------------------------------------------------------------------------#
+
+                    series_col_name = pandas.Series(dict_table.get('col_names'))
+                    series_col_type = pandas.Series(dict_table.get('col_dtype'))
+                    series_create = series_col_name + ' ' + series_col_type
+                    list_columns = list(series_create.values)
+                    del series_col_name, series_col_type, series_create
+
+                    #--------------------------------------------------------------------------------#
+                    # create table
+                    #--------------------------------------------------------------------------------#
+
+                    list_create_table = self.sql_conn.create_table(
+                        m_string_table = string_table,
+                        m_list_columns = list_columns,
+                        m_bool_wide_table = False,
+                        m_bool_compression = True)
+
+                    #--------------------------------------------------------------------------------#
+                    # add errors and boolean for return tuple
+                    #--------------------------------------------------------------------------------#
+
+                    bool_table = list_create_table[0]
+                    list_errors.append(list_create_table[1])
+                else:
+                    string_error_crete_table_00 = 'table {0} not in table dictionary'
+                    list_errors.append(string_error_crete_table_00.format(string_table))
+
+                #--------------------------------------------------------------------------------#
+                # create return set to test return boolean
+                #--------------------------------------------------------------------------------#
+
+                set_bool_return.add(bool_table)
+        else:
+            list_errors.append('no connection to sql database')
+            set_bool_return.add(bool_table)
+
+        #--------------------------------------------------------------------------------#
+        # for each table determine the return boolean
+        #--------------------------------------------------------------------------------#
+
+        if set_bool_return == {True}:
+            bool_return = True
 
         #--------------------------------------------------------------------------------#
         # return value

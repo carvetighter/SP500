@@ -71,6 +71,13 @@ def main_class_test(m_list_user):
     print('-------------------------------------------------------------')
 
     tup_db_check = sp_data.check_sql_db_setup()
+    if tup_db_check[0]:
+        # passed pull data from the database
+    else:
+        tup_create_sql_tables = sp_data.create_sql_db_tables(
+            tup_db_check[1])
+        
+
 
     #GetDataMarketStatus(m_list_user = m_list_user)
 
