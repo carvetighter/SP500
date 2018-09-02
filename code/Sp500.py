@@ -123,7 +123,7 @@ class Sp500Base(object):
 
         self.dt_yahoo_start = datetime(1970, 1, 1)
         self.dt_yahoo_stop = datetime.now()
-        self.string_sym_sp500 = '^GSPC'
+        self.string_sym_sp500 = '^SPX'
         self.bool_query_yahoo_finance = True
 
         #--------------------------------------------------------------------------#
@@ -657,26 +657,18 @@ class Sp500Data(Sp500Base):
         # sql db attributes
         #--------------------------------------------------------------------------#
 
-        self.string_sql_query_get_max_date = '''
-        '''
-
     #--------------------------------------------------------------------------#
     # callable methods
     #--------------------------------------------------------------------------#
 
-
-
-    #--------------------------------------------------------------------------#
-    # supportive methods
-    #--------------------------------------------------------------------------#
-
-    def _get_max_date_from_db(self):
+    def data_wrapper(self):
         '''
-        this method connects to the sql database and finds the most recent date
-        to query yahoo finance
+        this method is the wrapper to pull data from the database
+        and yahoo finance
 
         Requirements:
         package SqlMethods
+        package pandas
 
         Inputs:
         
@@ -704,9 +696,14 @@ class Sp500Data(Sp500Base):
         # lists declarations
         #--------------------------------------------------------------------------------#
 
+        list_errors = list()
+
         #--------------------------------------------------------------------------------#
         # variables declarations
         #--------------------------------------------------------------------------------#
+
+        bool_return = False
+        string_getting_yahoo_data = 'getting data from yahoo finance from {0} to {1}'
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -717,8 +714,228 @@ class Sp500Data(Sp500Base):
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
         #--------------------------------------------------------------------------------#
-        # sub-section comment
+        # get max date
         #--------------------------------------------------------------------------------#
+
+        if self.bool_verbose:
+            print('getting date to start query from yahoo finance')
+        tup_max_date = self._get_max_date_from_db()
+
+        # debug code
+        print(tup_max_date)
+
+        #--------------------------------------------------------------------------------#
+        # get data from yahoo finance
+        #--------------------------------------------------------------------------------#
+
+        if tup_max_date:
+            self._get_yahoo_data()
+        else:
+            pass
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # sectional comment
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # variable / object cleanup
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        pass
+
+    #--------------------------------------------------------------------------#
+    # supportive methods
+    #--------------------------------------------------------------------------#
+
+    def _get_max_date_from_db(self):
+        '''
+        this method connects to the sql database and finds the most recent date
+        to query yahoo finance
+
+        Requirements:
+        package SqlMethods
+
+        Inputs:
+        None
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: tuple
+        Desc: length = 2; the results of finding the newest / most recent date
+        in the data
+        tuple[0] -> type: boolean; if True 
+        tuple[1] -> type: datetime or string; if tuple[0] is True yahoo start date, if False
+            string of errors seperated by '||'
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        list_errors = list()
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        bool_return = False
+        string_sql_query_get_max_date = '''
+            select max(date_date)
+            from {0}
+            '''
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # configure query
+        #--------------------------------------------------------------------------------#
+
+        dict_table = self.dict_sp500_tables.get('data', None)
+        string_table = dict_table.get('table_name', None)
+        string_query = string_sql_query_get_max_date.format(string_table)
+        del dict_table, string_table
+
+        #--------------------------------------------------------------------------------#
+        # get max date
+        #--------------------------------------------------------------------------------#
+
+        list_max_date = self.sql_conn.query_select(string_query)
+        if list_max_date[0]:
+            string_date = list_max_date[1][0][0]
+            if isinstance(string_date, str):
+                self.dt_yahoo_start = datetime.strptime(string_date, '%Y-%m-%d') + timedelta(days = 1)
+                bool_return = True
+            else:
+                list_errors.append('data table is empty')
+        else:
+            string_error_max_date_00 = 'error in querying data table; '
+            string_error_max_date_00 += list_max_date[1]
+            list_errors.append(string_error_max_date_00)
+
+        #--------------------------------------------------------------------------------#
+        # variable / object cleanup
+        #--------------------------------------------------------------------------------#
+
+        if bool_return:
+            tup_return = (bool_return, self.dt_yahoo_start)
+        else:
+            tup_return = (bool_return, '||'.join(list_errors))
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        return tup_return
+
+    def _get_yahoo_data(self):
+        '''
+        this method 
+
+        Requirements:
+        package pandas
+        package pandasdatareader
+
+        Inputs:
+        None
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        
+        Type: 
+        Desc: 
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        int_query_count = 1
+        string_error_yahoo_data_00 = 'in query {0} of stooq error {1} occured'
+        string_get_yahoo_data = 'getting data from yahoo from {0} to {1}'
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # verbose string
+        #--------------------------------------------------------------------------------#
+
+        string_gyd = string_get_yahoo_data.format(
+                self.dt_yahoo_start.strftime('%d %b %Y'),
+                self.dt_yahoo_stop.strftime('%d %b %Y'))
+        if self.bool_verbose:
+            print(string_gyd)
+        
+        #--------------------------------------------------------------------------------#
+        # query yahoo fianance
+        #--------------------------------------------------------------------------------#
+
+        while self.bool_query_yahoo_finance == True:
+            try:
+                dataframe_sp500_raw = data.get_data_stooq(
+                    symbols = '^SPX',
+                    start = self.dt_yahoo_start,
+                    end = self.dt_yahoo_stop)
+            except Exception as e:
+                string_error_yd_00 = string_error_yahoo_data_00.format(
+                    int_query_count, str(e.args[0]))
+                print(string_error_yd_00)
+                int_query_count += 1
+            else:
+                self.bool_query_yahoo_finance = False
+                # debug code
+                print(dataframe_sp500_raw.iloc[:3])
+            finally:
+                if int_query_count > 50:
+                    break
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#

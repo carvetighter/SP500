@@ -99,7 +99,7 @@ def main_class_test(m_list_user):
     print('\n' + string_check_sql_db)
     tup_db_check = sp_data.check_sql_db()
     if tup_db_check[0]:
-        pass
+        sp_data.data_wrapper()
     else:
         #--------------------------------------------------------------------------#
         # error in the setup / check of the sql database
