@@ -121,8 +121,8 @@ class Sp500Base(object):
         # yahoo finance attributes
         #--------------------------------------------------------------------------#
 
-        self.dt_yahoo_start = datetime(1970, 1, 1)
-        self.dt_yahoo_stop = datetime.now()
+        self.dt_sp500_start = datetime(1970, 1, 1)
+        self.dt_sp500_stop = datetime.now()
         self.string_sym_sp500 = '^SPX'
         self.bool_query_yahoo_finance = True
 
@@ -728,10 +728,27 @@ class Sp500Data(Sp500Base):
         # get data from yahoo finance
         #--------------------------------------------------------------------------------#
 
-        if tup_max_date:
-            self._get_yahoo_data()
+        if tup_max_date[0]:
+            tup_sp500 = self._get_sp500_data()
         else:
-            pass
+            string_error_max_date = 'error in calculating the max date to pull data for sp500'
+            list_errors.append(string_error_max_date)
+            tup_sp500 = (False, string_error_max_date)
+            if self.bool_verbose:
+                print(string_error_max_date)
+
+        #--------------------------------------------------------------------------------#
+        # get latest 200 records from sp500 database
+        #--------------------------------------------------------------------------------#
+
+        if tup_sp500[0]:
+            tup_200 = self._get_200_from_db()
+        else:
+            string_error_sp500 = 'error in pulling sp500 data from stooq through pandas_datareader'
+            list_errors.append(string_error_sp500)
+            tup_200 = (False, string_error_sp500)
+            if self.bool_verbose:
+                print(string_error_sp500)
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -830,7 +847,7 @@ class Sp500Data(Sp500Base):
         if list_max_date[0]:
             string_date = list_max_date[1][0][0]
             if isinstance(string_date, str):
-                self.dt_yahoo_start = datetime.strptime(string_date, '%Y-%m-%d') + timedelta(days = 1)
+                self.dt_sp500_start = datetime.strptime(string_date, '%Y-%m-%d') + timedelta(days = 1)
                 bool_return = True
             else:
                 list_errors.append('data table is empty')
@@ -844,7 +861,7 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if bool_return:
-            tup_return = (bool_return, self.dt_yahoo_start)
+            tup_return = (bool_return, self.dt_sp500_start)
         else:
             tup_return = (bool_return, '||'.join(list_errors))
 
@@ -854,9 +871,9 @@ class Sp500Data(Sp500Base):
 
         return tup_return
 
-    def _get_yahoo_data(self):
+    def _get_sp500_data(self):
         '''
-        this method 
+        this method connets to stooq.com and pulls the sp500 data through pandas_datareader
 
         Requirements:
         package pandas
@@ -871,9 +888,13 @@ class Sp500Data(Sp500Base):
         None
 
         Return:
-        
-        Type: 
-        Desc: 
+        object
+        Type: tuple
+        Desc: length = 2; results of pulling the sp500 data
+        tuple[0] -> type: boolean; if the method resulted in sp500 data into a dataframe
+        tuple[1] -> type: pandas.DataFrame or string; if tuple[0] is True dataframe of sp500 data, if False
+            string of errors seperated by '||'
+       
         '''
 
         #--------------------------------------------------------------------------------#
@@ -888,6 +909,8 @@ class Sp500Data(Sp500Base):
         # lists declarations
         #--------------------------------------------------------------------------------#
 
+        list_errors = list()
+
         #--------------------------------------------------------------------------------#
         # variables declarations
         #--------------------------------------------------------------------------------#
@@ -895,6 +918,7 @@ class Sp500Data(Sp500Base):
         int_query_count = 1
         string_error_yahoo_data_00 = 'in query {0} of stooq error {1} occured'
         string_get_yahoo_data = 'getting data from yahoo from {0} to {1}'
+        bool_return = False
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -909,51 +933,170 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         string_gyd = string_get_yahoo_data.format(
-                self.dt_yahoo_start.strftime('%d %b %Y'),
-                self.dt_yahoo_stop.strftime('%d %b %Y'))
+                self.dt_sp500_start.strftime('%d %b %Y'),
+                self.dt_sp500_stop.strftime('%d %b %Y'))
         if self.bool_verbose:
             print(string_gyd)
         
         #--------------------------------------------------------------------------------#
-        # query yahoo fianance
+        # query sp500 data from stooq
         #--------------------------------------------------------------------------------#
 
         while self.bool_query_yahoo_finance == True:
             try:
-                dataframe_sp500_raw = data.get_data_stooq(
-                    symbols = '^SPX',
-                    start = self.dt_yahoo_start,
-                    end = self.dt_yahoo_stop)
+                df_sp500_raw = data.get_data_stooq(
+                    symbols = self.string_sym_sp500,
+                    start = self.dt_sp500_start,
+                    end = self.dt_sp500_stop)
             except Exception as e:
                 string_error_yd_00 = string_error_yahoo_data_00.format(
                     int_query_count, str(e.args[0]))
-                print(string_error_yd_00)
+                if self.bool_verbose:
+                    print(string_error_yd_00)
                 int_query_count += 1
             else:
                 self.bool_query_yahoo_finance = False
-                # debug code
-                print(dataframe_sp500_raw.iloc[:3])
             finally:
                 if int_query_count > 50:
                     break
+        
+        #--------------------------------------------------------------------------------#
+        # format dataframe
+        #--------------------------------------------------------------------------------#
 
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # sectional comment
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        if not self.bool_query_yahoo_finance:
+            self.df_raw_yahoo = df_sp500_raw
+            bool_return = True
+            del df_sp500_raw
+        else:
+            list_errors.append(string_error_yd_00)
 
         #--------------------------------------------------------------------------------#
         # variable / object cleanup
         #--------------------------------------------------------------------------------#
 
+        if bool_return:
+            tup_return = (bool_return, self.df_raw_yahoo)
+        else:
+            tup_return = (bool_return, '||'.join(list_errors))
+
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
 
-        pass
+        return tup_return
+
+    def _get_200_from_db(self):
+        '''
+        this method pulls the newest 200 records from the sql database
+
+        Requirements:
+        package SqlMethods
+        package pandas
+
+        Inputs:
+        None
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: tuple
+        Desc: length = 2; results of pulling 200 records from the sql database
+        tuple[0] -> type: boolean; if the method pulling 200 records from db
+        tuple[1] -> type: pandas.DataFrame or string; if tuple[0] is True dataframe of 200 records,
+            if False string of errors seperated by '||'
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        dt_query_date = self.dt_sp500_start - timedelta(days = 201)
+        string_query_date = dt_query_date.strftime('%Y-%m-%d')
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        list_errors = list()
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        bool_return = False
+        string_200_query_temp = '''
+            select top(200) *
+            from {0}
+            where date_date <= '{1}'
+            order by date_date desc'''
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # get table name
+        #--------------------------------------------------------------------------------#
+
+        dict_table = self.dict_sp500_tables.get('data')
+        string_table = dict_table.get('table_name')
+        list_columns = dict_table.get('col_names')
+
+        #--------------------------------------------------------------------------------#
+        # query database
+        #--------------------------------------------------------------------------------#
+
+        string_query = string_200_query_temp.format(
+            string_table,
+            string_query_date)
+        list_data = self.sql_conn.query_select(string_query)
+
+        #--------------------------------------------------------------------------------#
+        # configure dataframe
+        #--------------------------------------------------------------------------------#
+
+        if list_data[0]:
+            df_200 = pandas.DataFrame(
+                data = list_data[1],
+                columns = list_columns)
+            df_200 = df_200.sort_values(
+                by = ['date_date'],
+                ascending = True)
+            df_200.index = df_200['date_date'].apply(
+                lambda x: datetime.strptime(x, '%Y-%m-%d'))
+            self.df_db_data = df_200
+            del df_200
+            bool_return = True
+        else:
+            list_errors.append('error in query for newest 200 records of sp500')
+
+        #--------------------------------------------------------------------------------#
+        # variable / object cleanup
+        #--------------------------------------------------------------------------------#
+
+        if bool_return:
+            tup_return = (bool_return, self.df_db_data)
+        else:
+            tup_return = (bool_return, '||'.join(list_errors))
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        return tup_return
 
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
