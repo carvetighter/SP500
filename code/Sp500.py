@@ -20,18 +20,18 @@ from datetime import datetime
 from datetime import time
 from datetime import timedelta
 from datetime import timezone
-#from pandas_datareader import data
-#import pandas_datareader
 import fix_yahoo_finance
 import numpy
 import warnings
 from matplotlib import pyplot
 from matplotlib import style
-import pandas
 from SqlMethods import SqlMethods
 
 # fix for is_list_like error
-#pandas.core.common.is_list_like = pandas.api.types.is_list_like
+import pandas
+pandas.core.common.is_list_like = pandas.api.types.is_list_like
+from pandas_datareader import data
+import pandas_datareader
 
 # ignore warnings
 warnings.simplefilter('ignore')
