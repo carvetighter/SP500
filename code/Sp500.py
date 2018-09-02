@@ -148,12 +148,91 @@ class Sp500Base(object):
 
     #--------------------------------------------------------------------------#
     # callable methods
-    # 
-    # methods that directly support callable methods should
-    # be underneath method
     #--------------------------------------------------------------------------#
 
-    def check_sql_db_setup(self):
+    def check_sql_db(self):
+        '''
+        this method is a wrapper to check the sql database structure and
+        setup for the analysis
+
+        Requirements:
+        package SqlMethods
+        package pandas
+
+        Inputs:
+        none
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: tuple
+        Desc: if the database is structured for the analysis and any errors that
+            are detected; if tuple[0] is True the tables exists and the columns names are
+            the same as the dictionary
+        tuple[0] -> type: boolean; True of db is setup for the analysis, False if not
+        tuple[1] -> type: string; if tuple[0] is True then empty string; if tuple[0] is
+            False than any errors that are detected; errors are separated by double
+            pipes '||'
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # iterator declarations
+        #--------------------------------------------------------------------------------#
+
+        tup_return = None
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        string_check_setup = 'checking sql setup for analysis'
+        string_sql_good_setup = 'sql database is setup correctly'
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # check the sql database structure
+        #--------------------------------------------------------------------------------#
+
+        if self.bool_verbose:
+            print(string_check_setup)
+        tup_db_check = self._check_sql_db_setup()
+        if tup_db_check[0]:
+            if self.bool_verbose:
+                print(string_sql_good_setup)
+            tup_return = tup_db_check
+        else:
+            tup_return = self._create_sql_db_tables(tup_db_check[1])
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        return tup_return
+
+    #--------------------------------------------------------------------------#
+    # supportive methods
+    #--------------------------------------------------------------------------#
+
+    def _check_sql_db_setup(self):
         '''
         this method checks the sql database for the correct structure
 
@@ -263,7 +342,7 @@ class Sp500Base(object):
 
         return bool_return, '||'.join(list_errors)
 
-    def create_sql_db_tables(self, m_string_sql_db_errors):
+    def _create_sql_db_tables(self, m_string_sql_db_errors):
         '''
         this method creates the sql database tables based on the error string passed
 
@@ -411,10 +490,6 @@ class Sp500Base(object):
         #--------------------------------------------------------------------------------#
 
         return bool_return, '||'.join(list_errors)
-
-    #--------------------------------------------------------------------------#
-    # supportive methods
-    #--------------------------------------------------------------------------#
 
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
