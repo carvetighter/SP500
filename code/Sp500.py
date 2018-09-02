@@ -730,6 +730,10 @@ class Sp500Data(Sp500Base):
 
         if tup_max_date[0]:
             tup_sp500 = self._get_sp500_data()
+
+            # debug code
+            print('sp500 data')
+            print(tup_sp500[1].iloc[:3])
         else:
             string_error_max_date = 'error in calculating the max date to pull data for sp500'
             list_errors.append(string_error_max_date)
@@ -743,6 +747,9 @@ class Sp500Data(Sp500Base):
 
         if tup_sp500[0]:
             tup_200 = self._get_200_from_db()
+            # debug code
+            print('200 newest from db')
+            print(tup_200[1].iloc[:3])
         else:
             string_error_sp500 = 'error in pulling sp500 data from stooq through pandas_datareader'
             list_errors.append(string_error_sp500)
@@ -1077,6 +1084,9 @@ class Sp500Data(Sp500Base):
                 ascending = True)
             df_200.index = df_200['date_date'].apply(
                 lambda x: datetime.strptime(x, '%Y-%m-%d'))
+            df_200 = df_200.drop(
+                labels = ['date_date'], 
+                axis = 1,)
             self.df_db_data = df_200
             del df_200
             bool_return = True
