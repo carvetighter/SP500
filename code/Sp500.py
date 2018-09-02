@@ -100,13 +100,15 @@ class Sp500Base(object):
         #--------------------------------------------------------------------------#
 
         self.dict_sp500_tables = {
-            'sp500.data':{
+            'data':{
+                'table_name':'sp500.data',
                 'col_dtype':['date', 'float', 'varchar(10)', 'varchar(500)', 'float', 'float', 'float', 'float', 'float',
                     'float', 'float'],
                 'col_names':['date_date', 'float_close', 'string_in_market', 'string_trigger', 'float_50_sma',
                     'float_200_sma', 'float_delta_50_200', 'float_delta_hl', 'float_delta_div_hl', 'float_velocity',
                     'float_accel']},
-            'sp500.analysis':{
+            'analysis':{
+                'table_name':'sp500.analysis',
                 'col_dtype':['date', 'date', 'date', 'float', 'int', 'int', 'int', 'int', 'varchar(10)', 'float', 'float', 'float',
                     'float', 'float', 'varchar(50)'],
                 'col_names':['date_analysis', 'date_start', 'date_stop', 'dollar_start', 'int_days_range',
@@ -293,14 +295,15 @@ class Sp500Base(object):
         #--------------------------------------------------------------------------------#
 
         if self.sql_conn.bool_is_connected:
-            for string_table in self.dict_sp500_tables:
+            for string_key in self.dict_sp500_tables:
 
                 #--------------------------------------------------------------------------------#
                 # set table boolean check and get table information
                 #--------------------------------------------------------------------------------#
 
                 bool_table_check = False
-                dict_table = self.dict_sp500_tables.get(string_table, None)
+                dict_table = self.dict_sp500_tables.get(string_key, None)
+                string_table = dict_table.get('table_name', None)
                 bool_table_exists = self.sql_conn.table_exists(string_table)
                 
                 #--------------------------------------------------------------------------------#
@@ -423,7 +426,13 @@ class Sp500Base(object):
                 #--------------------------------------------------------------------------------#
 
                 bool_table = False
-                dict_table = self.dict_sp500_tables.get(string_table, None)
+                for string_key in self.dict_sp500_tables:
+                    dict_table = self.dict_sp500_tables.get(string_key, None)
+                    if dict_table.get('table_name', None) == string_table:
+                        dict_test_table = dict_table
+                        break
+                    else:
+                        dict_test_table = None
 
                 #--------------------------------------------------------------------------------#
                 # test to ensure table is in dictionary
@@ -444,8 +453,8 @@ class Sp500Base(object):
                     # create list to create columns
                     #--------------------------------------------------------------------------------#
 
-                    series_col_name = pandas.Series(dict_table.get('col_names'))
-                    series_col_type = pandas.Series(dict_table.get('col_dtype'))
+                    series_col_name = pandas.Series(dict_test_table.get('col_names'))
+                    series_col_type = pandas.Series(dict_test_table.get('col_dtype'))
                     series_create = series_col_name + ' ' + series_col_type
                     list_columns = list(series_create.values)
                     del series_col_name, series_col_type, series_create
@@ -643,6 +652,13 @@ class Sp500Data(Sp500Base):
         super().__init__(
             c_list_sql_up = c_list_sql_up,
             c_bool_verbose = c_bool_verbose)
+        
+        #--------------------------------------------------------------------------#
+        # sql db attributes
+        #--------------------------------------------------------------------------#
+
+        self.string_sql_query_get_max_date = '''
+        '''
 
     #--------------------------------------------------------------------------#
     # callable methods
@@ -653,6 +669,74 @@ class Sp500Data(Sp500Base):
     #--------------------------------------------------------------------------#
     # supportive methods
     #--------------------------------------------------------------------------#
+
+    def _get_max_date_from_db(self):
+        '''
+        this method connects to the sql database and finds the most recent date
+        to query yahoo finance
+
+        Requirements:
+        package SqlMethods
+
+        Inputs:
+        
+        Type: 
+        Desc: 
+
+        Important Info:
+        None
+
+        Return:
+        
+        Type: 
+        Desc: 
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # sub-section comment
+        #--------------------------------------------------------------------------------#
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # sectional comment
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # variable / object cleanup
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        pass
 
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
