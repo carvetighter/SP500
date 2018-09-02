@@ -20,7 +20,8 @@ from datetime import datetime
 from datetime import time
 from datetime import timedelta
 from datetime import timezone
-from pandas_datareader import data
+#from pandas_datareader import data
+#import pandas_datareader
 import fix_yahoo_finance
 import numpy
 import warnings
@@ -30,7 +31,7 @@ import pandas
 from SqlMethods import SqlMethods
 
 # fix for is_list_like error
-pandas.core.common.is_list_like = pandas.api.types.is_list_like
+#pandas.core.common.is_list_like = pandas.api.types.is_list_like
 
 # ignore warnings
 warnings.simplefilter('ignore')
@@ -640,9 +641,8 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------#
 
         super().__init__(
-            c_list_sql_up = c_bool_verbose,
+            c_list_sql_up = c_list_sql_up,
             c_bool_verbose = c_bool_verbose)
-
 
     #--------------------------------------------------------------------------#
     # callable methods
