@@ -869,9 +869,9 @@ class Sp500Data(Sp500Base):
         list_max_date = self.sql_conn.query_select(string_query)
         if list_max_date[0]:
             string_date = list_max_date[1][0][0]
+            bool_return = True
             if isinstance(string_date, str):
                 self.dt_sp500_start = datetime.strptime(string_date, '%Y-%m-%d') + timedelta(days = 1)
-                bool_return = True
             else:
                 list_errors.append('data table is empty')
         else:
@@ -965,7 +965,7 @@ class Sp500Data(Sp500Base):
         # query sp500 data from stooq
         #--------------------------------------------------------------------------------#
 
-        while self.bool_query_yahoo_finance == True:
+        while self.bool_query_yahoo_finance:
             try:
                 df_sp500_raw = data.get_data_stooq(
                     symbols = self.string_sym_sp500,
@@ -1130,6 +1130,7 @@ class Sp500Data(Sp500Base):
 
         Requirements:
         package pandas
+        package numpy
 
         Inputs:
         None
@@ -1157,9 +1158,13 @@ class Sp500Data(Sp500Base):
         # lists declarations
         #--------------------------------------------------------------------------------#
 
+        list_errors = list()
+
         #--------------------------------------------------------------------------------#
         # variables declarations
         #--------------------------------------------------------------------------------#
+
+        bool_return = False
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -1170,26 +1175,100 @@ class Sp500Data(Sp500Base):
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
         #--------------------------------------------------------------------------------#
-        # sub-section comment
+        # test dataframes
         #--------------------------------------------------------------------------------#
 
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # sectional comment
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        bool_db_data = isinstance(self.df_db_data, pandas.DataFrame)
+        bool_raw_data = isinstance(self.df_raw_yahoo, pandas.DataFrame)
+
+        #--------------------------------------------------------------------------------#
+        # conduct calculations
+        #--------------------------------------------------------------------------------#
+
+        if bool_db_data and bool_raw_data:
+            #--------------------------------------------------------------------------------#
+            # get column information
+            #--------------------------------------------------------------------------------#
+            
+            dict_table = self.dict_sp500_tables.get('data', None)
+            list_columns = dict_table.get('col_names')
+
+            #--------------------------------------------------------------------------------#
+            # combine dataframes
+            #--------------------------------------------------------------------------------#
+
+            df_sp500 = pandas.DataFrame(columns = list_columns[1:])
+            df_sp500['float_close'] = self.df_raw_yahoo['Close']
+            df_calc = pandas.concat([self.df_db_data, df_sp500], axis = 0)
+            del df_sp500
+        
+            #--------------------------------------------------------------------------------#
+            # 50 and 200 sma
+            #--------------------------------------------------------------------------------#
+
+            rolling_50 = df_calc['float_close'].rolling(window = 50)
+            rolling_50_sma = rolling_50.mean()
+            rolling_200 = df_calc['float_close'].rolling(window = 200)
+            rolling_200_sma = rolling_200.mean()
+
+            #--------------------------------------------------------------------------------#
+            # 50 - 200 sma
+            #--------------------------------------------------------------------------------#
+
+            series_delta_50_200 = rolling_50_sma - rolling_200_sma
+
+            #--------------------------------------------------------------------------------#
+            # velocity and acceleration
+            #--------------------------------------------------------------------------------#
+
+            list_velocity = [numpy.nan]
+            list_acceleration = [numpy.nan, numpy.nan]
+            for int_index in range(1, len(df_calc)):
+                list_velocity.append(
+                    df_calc['float_close'].iloc[int_index] - df_calc['float_close'].iloc[int_index - 1])
+                if int_index >= 2:
+                    list_acceleration.append(
+                        df_calc['float_close'].iloc[int_index] - df_calc['float_close'].iloc[int_index - 1])
+            series_velocity = pandas.Series(data = list_velocity)
+            series_acceleration = pandas.Series(data = list_acceleration)
+
+            #--------------------------------------------------------------------------------#
+            # combine into dataframe
+            #--------------------------------------------------------------------------------#
+
+            bool_return = True
+            self.df_analysis = pandas.DataFrame()
+            self.df_analysis = self.df_analysis.assign(float_close = df_calc['float_close'].values)
+            self.df_analysis = self.df_analysis.assign(float_50_sma = rolling_50_sma.values)
+            self.df_analysis = self.df_analysis.assign(float_200_sma = rolling_200_sma.values)
+            self.df_analysis = self.df_analysis.assign(float_delta_50_200 = series_delta_50_200.values)
+            self.df_analysis = self.df_analysis.assign(float_velocity = series_velocity.values)
+            self.df_analysis = self.df_analysis.assign(float_accel = series_acceleration.values)
+            self.df_analysis = self.df_analysis.assign(string_in_market = df_calc['string_in_market'].values)
+            self.df_analysis = self.df_analysis.assign(string_trigger = df_calc['string_trigger'].values)
+            self.df_analysis = self.df_analysis.assign(float_delta_hl = df_calc['float_delta_hl'].values)
+            self.df_analysis = self.df_analysis.assign(float_delta_div_hl = df_calc['float_delta_div_hl'].values)
+            self.df_analysis = self.df_analysis[list_columns]
+        else:
+            string_error_calc_00 = 'either the raw data from sp500 or database data is not present'
+            list_errors.append(string_error_calc_00)
+            if self.bool_verbose:
+                print(string_error_calc_00)
 
         #--------------------------------------------------------------------------------#
         # variable / object cleanup
         #--------------------------------------------------------------------------------#
 
+        if bool_return:
+            tup_return = (bool_return, self.df_analysis)
+        else:
+            tup_return = (bool_return, '||'.join(list_errors))
+
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
 
-        pass
+        return tup_return
 
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
