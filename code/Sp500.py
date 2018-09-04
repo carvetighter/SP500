@@ -796,12 +796,9 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if tup_max_date[0]:
+            if self.bool_verbose:
+                print('get sp500 data')
             tup_sp500 = self._get_sp500_data()
-
-            # debug code
-            print('sp500 data')
-            # print(tup_sp500[1].iloc[:3])
-            print(len(self.df_raw_yahoo))
         else:
             string_error_max_date = 'error in calculating the max date to pull data for sp500'
             list_errors.append(string_error_max_date)
@@ -814,11 +811,9 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if tup_sp500[0]:
+            if self.bool_verbose:
+                print('getting latest 200 records from database')
             tup_200 = self._get_200_from_db()
-            # debug code
-            print('200 newest from db')
-            # print(tup_200[1].iloc[:3])
-            print(len(self.df_db_data))
         else:
             string_error_sp500 = 'error in pulling sp500 data from stooq through pandas_datareader'
             list_errors.append(string_error_sp500)
@@ -831,11 +826,9 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if tup_200[0]:
+            if self.bool_verbose:
+                print('calculating metrics')
             tup_calc = self._calc_metrics()
-            # debug code
-            print('calculated metrics')
-            # print(tup_calc[1].iloc[:3])
-            print(len(self.df_analysis))
         else:
             string_error_200 = 'error in pulling 200 records from local sql db'
             list_errors.append(string_error_200)
@@ -844,23 +837,46 @@ class Sp500Data(Sp500Base):
                 print(string_error_200)
 
         #--------------------------------------------------------------------------------#
-        # caclualte in or out of the market
+        # caclulate in or out of the market
         #--------------------------------------------------------------------------------#
 
         if tup_calc[0]:
+            if self.bool_verbose:
+                print('calculating in out metrics')
             tup_inout = self._calc_inout_market()
-            # debug code
-            print('in out metrics')
-            print(tup_inout[1].iloc[:3])
-            print(tup_inout[1].iloc[-3:])
-            print(tup_inout[1].iloc[-3:].index._date_repr)
-            print(len(tup_calc[1]))
         else:
-            string_error_inout = 'error in caclulating in or out of the market'
+            string_error_calc = 'error in caclulating metrics for market assessment'
+            list_errors.append(string_error_calc)
+            tup_calc = (False, string_error_calc)
+            if self.bool_verbose:
+                print(string_error_calc)
+
+        #--------------------------------------------------------------------------------#
+        # insert results into sql database
+        #--------------------------------------------------------------------------------#
+
+        if tup_inout[0]:
+            if self.bool_verbose:
+                print('inserting results into sql database')
+            tup_insert_results = self._insert_results()
+        else:
+            string_error_inout = 'error in calculating in and out of market'
             list_errors.append(string_error_inout)
-            tup_calc = (False, string_error_inout)
+            tup_insert_results = (False, string_error_inout)
             if self.bool_verbose:
                 print(string_error_inout)
+
+        #--------------------------------------------------------------------------------#
+        # show insert results from database
+        #--------------------------------------------------------------------------------#
+
+        if tup_insert_results[0]:
+            print('successfull insert into sql databse')
+        else:
+            string_error_sql = 'error in inserting into sql database'
+            list_errors.append(string_error_sql)
+            if self.bool_verbose:
+                print(string_error_sql)
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -1294,6 +1310,7 @@ class Sp500Data(Sp500Base):
 
             df_sp500 = pandas.DataFrame(columns = list_columns[1:])
             df_sp500['float_close'] = self.df_raw_yahoo['Close']
+            df_sp500.index = self.df_raw_yahoo.index
             df_calc = pandas.concat([self.df_db_data, df_sp500], axis = 0)
             del df_sp500
 
@@ -1344,6 +1361,7 @@ class Sp500Data(Sp500Base):
             self.df_analysis = self.df_analysis.assign(float_delta_hl = df_calc['float_delta_hl'].values)
             self.df_analysis = self.df_analysis.assign(float_delta_div_hl = df_calc['float_delta_div_hl'].values)
             self.df_analysis = self.df_analysis[list_columns[1:]]
+            self.df_analysis.index = df_calc.index
         else:
             string_error_calc_00 = 'either the raw data from sp500 or database data is not present'
             list_errors.append(string_error_calc_00)
@@ -1527,6 +1545,89 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         return tup_return
+
+    def _insert_results(self):
+        '''
+        this method inserts results into sql database
+
+        Requirements:
+        package SqlMethods
+        package pandas
+
+        Inputs:
+        none
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: tuple
+        Desc: length = 2; results of the insert into the sql database
+        tuple[0] -> type: boolean; results of the insert into sql database
+        tuple[1] -> type: string; errors if tuple[0] == False string will be the
+            errors from the insert
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        dict_table = self.dict_sp500_tables.get('data')
+        list_columns = dict_table.get('col_names')
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        string_table = dict_table.get('table_name')
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # add date_date column to DataFrame
+        #--------------------------------------------------------------------------------#
+
+        self.df_analysis = self.df_analysis.assign(
+            date_date = self.df_analysis.index)
+        self.df_analysis['date_date'] = self.df_analysis['date_date'].apply(
+            lambda x: x._date_repr)
+        self.df_analysis = self.df_analysis[list_columns]
+
+        # debug code
+        print(self.df_analysis.iloc[-3:])
+        print(self.df_analysis.values.tolist()[-3:])
+        
+        #--------------------------------------------------------------------------------#
+        # get insert information for sql database
+        #--------------------------------------------------------------------------------#
+        
+        list_insert_results = self.sql_conn.insert(
+            m_string_table = string_table,
+            m_list_columns = list_columns,
+            m_list_values = self.df_analysis.values.tolist())
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        return tuple(list_insert_results)
 
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
