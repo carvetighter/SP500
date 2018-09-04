@@ -434,7 +434,7 @@ def CalcInOutMarket(m_dataframe_data, bool_initial_load):
             else:
                 if float_delta < float_delta_high_low:
                     float_delta_high_low = float_delta
-        
+
         # update dataframe
         m_dataframe_data['string_in_market'].iloc[int_index] = bool_in_market
         m_dataframe_data['float_delta_hl'].iloc[int_index] = float_delta_high_low

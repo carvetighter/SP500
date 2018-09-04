@@ -116,12 +116,13 @@ class Sp500Base(object):
                     'dollar_gm_with_fee', 'dollar_man_fee', 'dollar_buy_hold', 'dollar_gm_no_fee',
                     'string_symbol']}}
         self.tup_sql_db_setup = (False, 'not checked')
+        self.bool_initial_load = False
 
         #--------------------------------------------------------------------------#
         # yahoo finance attributes
         #--------------------------------------------------------------------------#
 
-        self.dt_sp500_start = datetime(1994, 1, 1)
+        self.dt_sp500_start = datetime(1970, 1, 1)
         self.dt_sp500_stop = datetime.now()
         self.string_sym_sp500 = '^SPX'
         self.bool_query_yahoo_finance = True
@@ -501,6 +502,75 @@ class Sp500Base(object):
 
         return bool_return, '||'.join(list_errors)
 
+    def _nan_to_unknown(self, m_pandas_series, m_replacement = '', bool_string = False):
+        '''
+        this method replaces all the nan values (which is a float in python / numpy)
+        
+        Requirements:
+        package pandas
+        
+        Inputs:
+        m_pandas_series
+        Type: pandas series
+        Desc: the data to clean
+        
+        m_replacement
+        Type: variable / multiple
+        Desc: the replacement value for numpy.nan
+        
+        bool_string
+        Type: boolean
+        Desc: flag to test series as a string or a float
+        
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: pandas series
+        Desc: the dataframe where each nan value is converted to a string 'Unknown'
+        '''
+
+        #--------------------------------------------------------------------------#
+        # package import
+        #--------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------#
+        # variable / object declarations
+        #--------------------------------------------------------------------------#
+
+        # type casting for visual studio
+        m_pandas_series = pandas.Series(m_pandas_series)
+
+        # variables
+        if m_replacement == '':
+            m_replacement = 'Unknown'
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------#
+        # replacing na / nan values with space
+        #--------------------------------------------------------------------------#
+
+        if m_pandas_series.hasnans == True and bool_string == False:
+            series_nan = m_pandas_series.isnull()
+            m_pandas_series.loc[series_nan.values] = m_replacement
+
+        if bool_string == True:
+            m_pandas_series.loc[m_pandas_series == 'nan'] = m_replacement
+
+        #--------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------#
+
+        return m_pandas_series
+
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
         below is an example of a good method comment
@@ -718,11 +788,8 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if self.bool_verbose:
-            print('getting date to start query from yahoo finance')
+            print('getting date to start query for sp500')
         tup_max_date = self._get_max_date_from_db()
-
-        # debug code
-        print(tup_max_date)
 
         #--------------------------------------------------------------------------------#
         # get data from yahoo finance
@@ -733,7 +800,8 @@ class Sp500Data(Sp500Base):
 
             # debug code
             print('sp500 data')
-            print(tup_sp500[1].iloc[:3])
+            # print(tup_sp500[1].iloc[:3])
+            print(len(self.df_raw_yahoo))
         else:
             string_error_max_date = 'error in calculating the max date to pull data for sp500'
             list_errors.append(string_error_max_date)
@@ -749,7 +817,8 @@ class Sp500Data(Sp500Base):
             tup_200 = self._get_200_from_db()
             # debug code
             print('200 newest from db')
-            print(tup_200[1].iloc[:3])
+            # print(tup_200[1].iloc[:3])
+            print(len(self.df_db_data))
         else:
             string_error_sp500 = 'error in pulling sp500 data from stooq through pandas_datareader'
             list_errors.append(string_error_sp500)
@@ -758,21 +827,41 @@ class Sp500Data(Sp500Base):
                 print(string_error_sp500)
 
         #--------------------------------------------------------------------------------#
-        # get latest 200 records from sp500 database
+        # caclualte metrics
         #--------------------------------------------------------------------------------#
 
         if tup_200[0]:
             tup_calc = self._calc_metrics()
             # debug code
             print('calculated metrics')
-            print(tup_calc[1].iloc[:3])
+            # print(tup_calc[1].iloc[:3])
+            print(len(self.df_analysis))
         else:
             string_error_200 = 'error in pulling 200 records from local sql db'
             list_errors.append(string_error_200)
             tup_calc = (False, string_error_200)
             if self.bool_verbose:
                 print(string_error_200)
-        
+
+        #--------------------------------------------------------------------------------#
+        # caclualte in or out of the market
+        #--------------------------------------------------------------------------------#
+
+        if tup_calc[0]:
+            tup_inout = self._calc_inout_market()
+            # debug code
+            print('in out metrics')
+            print(tup_inout[1].iloc[:3])
+            print(tup_inout[1].iloc[-3:])
+            print(tup_inout[1].iloc[-3:].index._date_repr)
+            print(len(tup_calc[1]))
+        else:
+            string_error_inout = 'error in caclulating in or out of the market'
+            list_errors.append(string_error_inout)
+            tup_calc = (False, string_error_inout)
+            if self.bool_verbose:
+                print(string_error_inout)
+
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #
@@ -816,7 +905,7 @@ class Sp500Data(Sp500Base):
         Type: tuple
         Desc: length = 2; the results of finding the newest / most recent date
         in the data
-        tuple[0] -> type: boolean; if True 
+        tuple[0] -> type: boolean; if True
         tuple[1] -> type: datetime or string; if tuple[0] is True yahoo start date, if False
             string of errors seperated by '||'
         '''
@@ -874,6 +963,7 @@ class Sp500Data(Sp500Base):
                 self.dt_sp500_start = datetime.strptime(string_date, '%Y-%m-%d') + timedelta(days = 1)
             else:
                 list_errors.append('data table is empty')
+                self.bool_initial_load = True
         else:
             string_error_max_date_00 = 'error in querying data table; '
             string_error_max_date_00 += list_max_date[1]
@@ -940,7 +1030,7 @@ class Sp500Data(Sp500Base):
 
         int_query_count = 1
         string_error_yahoo_data_00 = 'in query {0} of stooq error {1} occured'
-        string_get_yahoo_data = 'getting data from yahoo from {0} to {1}'
+        string_get_yahoo_data = 'getting data for sp500 from {0} to {1}'
         bool_return = False
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -969,8 +1059,8 @@ class Sp500Data(Sp500Base):
             try:
                 df_sp500_raw = data.get_data_stooq(
                     symbols = self.string_sym_sp500,
-                    start = self.dt_sp500_start,
-                    end = self.dt_sp500_stop)
+                    start = self.dt_sp500_start.strftime('%Y-%m-%d'),
+                    end = self.dt_sp500_stop.strftime('%Y-%m-%d'))
             except Exception as e:
                 string_error_yd_00 = string_error_yahoo_data_00.format(
                     int_query_count, str(e.args[0]))
@@ -979,6 +1069,8 @@ class Sp500Data(Sp500Base):
                 int_query_count += 1
             else:
                 self.bool_query_yahoo_finance = False
+                bool_array = df_sp500_raw.index >= self.dt_sp500_start
+                df_sp500_raw = df_sp500_raw[bool_array]
             finally:
                 if int_query_count > 50:
                     break
@@ -1101,7 +1193,7 @@ class Sp500Data(Sp500Base):
             df_200.index = df_200['date_date'].apply(
                 lambda x: datetime.strptime(x, '%Y-%m-%d'))
             df_200 = df_200.drop(
-                labels = ['date_date'], 
+                labels = ['date_date'],
                 axis = 1,)
             self.df_db_data = df_200
             del df_200
@@ -1143,7 +1235,10 @@ class Sp500Data(Sp500Base):
         Return:
         object
         Type: tuple
-        Desc: 
+        Desc: length = 2; results of calculating metrics
+        tuple[0] -> type: boolean; if the method functioned properly
+        tuple[1] -> type: pandas.DataFrame or string; if tuple[0] is True dataframe of metrics,
+            if False string of errors seperated by '||'
         '''
 
         #--------------------------------------------------------------------------------#
@@ -1189,7 +1284,7 @@ class Sp500Data(Sp500Base):
             #--------------------------------------------------------------------------------#
             # get column information
             #--------------------------------------------------------------------------------#
-            
+
             dict_table = self.dict_sp500_tables.get('data', None)
             list_columns = dict_table.get('col_names')
 
@@ -1201,7 +1296,7 @@ class Sp500Data(Sp500Base):
             df_sp500['float_close'] = self.df_raw_yahoo['Close']
             df_calc = pandas.concat([self.df_db_data, df_sp500], axis = 0)
             del df_sp500
-        
+
             #--------------------------------------------------------------------------------#
             # 50 and 200 sma
             #--------------------------------------------------------------------------------#
@@ -1248,12 +1343,175 @@ class Sp500Data(Sp500Base):
             self.df_analysis = self.df_analysis.assign(string_trigger = df_calc['string_trigger'].values)
             self.df_analysis = self.df_analysis.assign(float_delta_hl = df_calc['float_delta_hl'].values)
             self.df_analysis = self.df_analysis.assign(float_delta_div_hl = df_calc['float_delta_div_hl'].values)
-            self.df_analysis = self.df_analysis[list_columns]
+            self.df_analysis = self.df_analysis[list_columns[1:]]
         else:
             string_error_calc_00 = 'either the raw data from sp500 or database data is not present'
             list_errors.append(string_error_calc_00)
             if self.bool_verbose:
                 print(string_error_calc_00)
+
+        #--------------------------------------------------------------------------------#
+        # variable / object cleanup
+        #--------------------------------------------------------------------------------#
+
+        if bool_return:
+            tup_return = (bool_return, self.df_analysis)
+        else:
+            tup_return = (bool_return, '||'.join(list_errors))
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        return tup_return
+
+    def _calc_inout_market(self):
+        '''
+        this method calculates wether to be in or out of the market
+
+        Requirements:
+        package pandas
+        package numpy
+
+        Inputs:
+        None
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: tuple
+        Desc: length = 2; results of calculating in or out of market
+        tuple[0] -> type: boolean; if the method functioned properly
+        tuple[1] -> type: pandas.DataFrame or string; if tuple[0] is True dataframe of in and out market,
+            if False string of errors seperated by '||'
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        list_errors = list()
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        bool_return = False
+        string_trigger_rule_01 = '50 sma < 200 sma'
+        string_trigger_rule_02 = r'50 sma / 200 sma within 5% of max low'
+        bool_df_analysis = bool(isinstance(self.df_analysis, pandas.DataFrame))
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        if bool_df_analysis:
+            #--------------------------------------------------------------------------------#
+            # determine initial variables
+            #--------------------------------------------------------------------------------#
+
+            if self.bool_initial_load:
+                bool_in_market = True
+                float_delta_high_low = self.df_analysis['float_delta_50_200'].iloc[199]
+                self.df_analysis['float_delta_hl'].iloc[199] = float_delta_high_low
+                self.df_analysis['string_in_market'].iloc[199] = True
+                int_index_start = 200
+            else:
+                bool_in_market = bool(self.df_analysis['string_in_market'].iloc[0])
+                float_delta_high_low = self.df_analysis['float_delta_hl'].iloc[0]
+                int_index_start = 1
+
+            #--------------------------------------------------------------------------------#
+            # calculate in out of the market
+            #--------------------------------------------------------------------------------#
+
+            for int_index in range(int_index_start, self.df_analysis.shape[0]):
+                #--------------------------------------------------------------------------------#
+                # get metrics
+                #--------------------------------------------------------------------------------#
+
+                float_delta_high_low = self.df_analysis['float_delta_hl'].iloc[int_index - 1]
+                float_delta = self.df_analysis['float_delta_50_200'].iloc[int_index]
+
+                #--------------------------------------------------------------------------------#
+                # rules
+                #--------------------------------------------------------------------------------#
+
+                if bool_in_market:
+                    #--------------------------------------------------------------------------------#
+                    # rule 01: if in the market and 50 sma - 200 sma < 0
+                    # get out of the market
+                    #--------------------------------------------------------------------------------#
+
+                    if float_delta < 0:
+                        bool_in_market = False
+                        float_delta_high_low = float_delta
+                        self.df_analysis['string_trigger'].iloc[int_index] = string_trigger_rule_01
+                    else:
+                        if float_delta > float_delta_high_low:
+                            float_delta_high_low = float_delta
+                else:
+                    #--------------------------------------------------------------------------------#
+                    # rule 02: if out of the market and 50 sma - 200 sma / delta
+                    # high low is 5% or less then get into the market
+                    #--------------------------------------------------------------------------------#
+
+                    if float_delta / float_delta_high_low < 0.05:
+                        bool_in_market = True
+                        float_delta_high_low = float_delta
+                        self.df_analysis['string_trigger'].iloc[int_index] = string_trigger_rule_02
+                    else:
+                        if float_delta < float_delta_high_low:
+                            float_delta_high_low = float_delta
+
+                #--------------------------------------------------------------------------------#
+                # update dataframe
+                #--------------------------------------------------------------------------------#
+
+                self.df_analysis['string_in_market'].iloc[int_index] = bool_in_market
+                self.df_analysis['float_delta_hl'].iloc[int_index] = float_delta_high_low
+                self.df_analysis['float_delta_div_hl'].iloc[int_index] = float_delta / float_delta_high_low
+
+            #--------------------------------------------------------------------------------#
+            # cleanup of nan(s)
+            #--------------------------------------------------------------------------------#
+
+            list_float_series = ['float_50_sma', 'float_200_sma', 'float_delta_50_200', 'float_delta_hl',
+                'float_delta_div_hl', 'float_velocity', 'float_accel']
+            self.df_analysis['string_trigger'] = self._nan_to_unknown(
+                self.df_analysis['string_trigger'],
+                'None')
+            self.df_analysis['string_in_market'] = self._nan_to_unknown(
+                self.df_analysis['string_in_market'],
+                False)
+            for string_series_name in list_float_series:
+                self.df_analysis[string_series_name] = self._nan_to_unknown(
+                    self.df_analysis[string_series_name],
+                    0.0)
+
+            #--------------------------------------------------------------------------------#
+            # return boolean
+            #--------------------------------------------------------------------------------#
+
+            bool_return = True
+        else:
+            list_errors.append('the analysis data container is not a pandas DataFrame')
 
         #--------------------------------------------------------------------------------#
         # variable / object cleanup
