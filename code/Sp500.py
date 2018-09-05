@@ -8,13 +8,13 @@ Sp500 analysis class -> conducts the analysis between the moving averages
 Sp500 visualizations class -> conducts the visualizations of the analysis
 '''
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 #
 # File / Package Import
 #
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
 from datetime import datetime
 from datetime import time
@@ -1610,14 +1610,10 @@ class Sp500Data(Sp500Base):
             lambda x: x._date_repr)
         self.df_analysis = self.df_analysis[list_columns]
 
-        # debug code
-        print(self.df_analysis.iloc[-3:])
-        print(self.df_analysis.values.tolist()[-3:])
-        
         #--------------------------------------------------------------------------------#
         # get insert information for sql database
         #--------------------------------------------------------------------------------#
-        
+
         list_insert_results = self.sql_conn.insert(
             m_string_table = string_table,
             m_list_columns = list_columns,
