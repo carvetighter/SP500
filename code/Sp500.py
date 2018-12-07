@@ -128,15 +128,6 @@ class Sp500Base(object):
                     'string_symbol']}}
         self.tup_sql_db_setup = (False, 'not checked')
         self.bool_initial_load = False
-
-        #--------------------------------------------------------------------------#
-        # yahoo finance attributes
-        #--------------------------------------------------------------------------#
-
-        self.dt_sp500_start = datetime(1970, 1, 1)
-        self.dt_sp500_stop = datetime.now()
-        self.string_sym_sp500 = '^SPX'
-        self.bool_query_yahoo_finance = True
         
         #--------------------------------------------------------------------------#
         # other attributes
@@ -625,11 +616,21 @@ class Sp500Data(Sp500Base):
             c_bool_verbose = c_bool_verbose)
         
         #--------------------------------------------------------------------------#
+        # get data attributes
+        #--------------------------------------------------------------------------#
+        
+        self.dt_sp500_start = datetime(1970, 1, 1)
+        self.dt_sp500_stop = datetime.now()
+        self.string_sym_sp500 = '^SPX'
+        self.bool_query_stooq_data = True
+        
+        #--------------------------------------------------------------------------#
         # data containers
         #--------------------------------------------------------------------------#
 
         self.df_raw_stooq = None
-        self.df_to_db = None
+        self.df_200_data = None
+        self.df_metrics = None
 
     #--------------------------------------------------------------------------#
     # callable methods
@@ -965,9 +966,9 @@ class Sp500Data(Sp500Base):
         # query sp500 data from stooq
         #--------------------------------------------------------------------------------#
 
-        while self.bool_query_yahoo_finance:
+        while self.bool_query_stooq_data:
             try:
-                df_sp500_raw = data.get_data_stooq(
+                df_raw_stooq = data.get_data_stooq(
                     symbols = self.string_sym_sp500,
                     start = self.dt_sp500_start.strftime('%Y-%m-%d'),
                     end = self.dt_sp500_stop.strftime('%Y-%m-%d'))
@@ -978,21 +979,19 @@ class Sp500Data(Sp500Base):
                     print(string_error_yd_00)
                 int_query_count += 1
             else:
-                self.bool_query_yahoo_finance = False
-                bool_array = df_sp500_raw.index >= self.dt_sp500_start
-                df_sp500_raw = df_sp500_raw[bool_array]
+                self.bool_query_stooq_data = False
+                bool_array = df_raw_stooq.index >= self.dt_sp500_start
+                df_raw_stooq = df_raw_stooq[bool_array]
             finally:
                 if int_query_count > 50:
-                    break
+                    self.bool_query_stooq_data = False
 
         #--------------------------------------------------------------------------------#
         # format dataframe
         #--------------------------------------------------------------------------------#
 
-        if not self.bool_query_yahoo_finance:
-            self.df_raw_yahoo = df_sp500_raw
+        if not self.bool_query_stooq_data:
             bool_return = True
-            del df_sp500_raw
         else:
             list_errors.append(string_error_yd_00)
 
@@ -1001,7 +1000,7 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if bool_return:
-            tup_return = (bool_return, self.df_raw_yahoo)
+            tup_return = (bool_return, self.df_raw_stooq)
         else:
             tup_return = (bool_return, '||'.join(list_errors))
 
@@ -1104,8 +1103,8 @@ class Sp500Data(Sp500Base):
                 lambda x: datetime.strptime(x, '%Y-%m-%d'))
             df_200 = df_200.drop(
                 labels = ['date_date'],
-                axis = 1,)
-            self.df_db_data = df_200
+                axis = 1)
+            self.df_200_data = df_200
             del df_200
             bool_return = True
         else:
@@ -1116,7 +1115,7 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if bool_return:
-            tup_return = (bool_return, self.df_db_data)
+            tup_return = (bool_return, self.df_200_data)
         else:
             tup_return = (bool_return, '||'.join(list_errors))
 
@@ -1183,8 +1182,8 @@ class Sp500Data(Sp500Base):
         # test dataframes
         #--------------------------------------------------------------------------------#
 
-        bool_db_data = isinstance(self.df_db_data, pandas.DataFrame)
-        bool_raw_data = isinstance(self.df_raw_yahoo, pandas.DataFrame)
+        bool_db_data = isinstance(self.df_200_data, pandas.DataFrame)
+        bool_raw_data = isinstance(self.df_raw_stooq, pandas.DataFrame)
 
         #--------------------------------------------------------------------------------#
         # conduct calculations
@@ -1203,9 +1202,9 @@ class Sp500Data(Sp500Base):
             #--------------------------------------------------------------------------------#
 
             df_sp500 = pandas.DataFrame(columns = list_columns[1:])
-            df_sp500['float_close'] = self.df_raw_yahoo['Close']
-            df_sp500.index = self.df_raw_yahoo.index
-            df_calc = pandas.concat([self.df_db_data, df_sp500], axis = 0)
+            df_sp500['float_close'] = self.df_raw_stooq['Close']
+            df_sp500.index = self.df_raw_stooq.index
+            df_calc = pandas.concat([self.df_200_data, df_sp500], axis = 0)
             del df_sp500
 
             #--------------------------------------------------------------------------------#
@@ -1243,19 +1242,19 @@ class Sp500Data(Sp500Base):
             #--------------------------------------------------------------------------------#
 
             bool_return = True
-            self.df_analysis = pandas.DataFrame()
-            self.df_analysis = self.df_analysis.assign(float_close = df_calc['float_close'].values)
-            self.df_analysis = self.df_analysis.assign(float_50_sma = rolling_50_sma.values)
-            self.df_analysis = self.df_analysis.assign(float_200_sma = rolling_200_sma.values)
-            self.df_analysis = self.df_analysis.assign(float_delta_50_200 = series_delta_50_200.values)
-            self.df_analysis = self.df_analysis.assign(float_velocity = series_velocity.values)
-            self.df_analysis = self.df_analysis.assign(float_accel = series_acceleration.values)
-            self.df_analysis = self.df_analysis.assign(string_in_market = df_calc['string_in_market'].values)
-            self.df_analysis = self.df_analysis.assign(string_trigger = df_calc['string_trigger'].values)
-            self.df_analysis = self.df_analysis.assign(float_delta_hl = df_calc['float_delta_hl'].values)
-            self.df_analysis = self.df_analysis.assign(float_delta_div_hl = df_calc['float_delta_div_hl'].values)
-            self.df_analysis = self.df_analysis[list_columns[1:]]
-            self.df_analysis.index = df_calc.index
+            self.df_metrics = pandas.DataFrame()
+            self.df_metrics = self.df_metrics.assign(float_close = df_calc['float_close'].values)
+            self.df_metrics = self.df_metrics.assign(float_50_sma = rolling_50_sma.values)
+            self.df_metrics = self.df_metrics.assign(float_200_sma = rolling_200_sma.values)
+            self.df_metrics = self.df_metrics.assign(float_delta_50_200 = series_delta_50_200.values)
+            self.df_metrics = self.df_metrics.assign(float_velocity = series_velocity.values)
+            self.df_metrics = self.df_metrics.assign(float_accel = series_acceleration.values)
+            self.df_metrics = self.df_metrics.assign(string_in_market = df_calc['string_in_market'].values)
+            self.df_metrics = self.df_metrics.assign(string_trigger = df_calc['string_trigger'].values)
+            self.df_metrics = self.df_metrics.assign(float_delta_hl = df_calc['float_delta_hl'].values)
+            self.df_metrics = self.df_metrics.assign(float_delta_div_hl = df_calc['float_delta_div_hl'].values)
+            self.df_metrics = self.df_metrics[list_columns[1:]]
+            self.df_metrics.index = df_calc.index
         else:
             string_error_calc_00 = 'either the raw data from sp500 or database data is not present'
             list_errors.append(string_error_calc_00)
@@ -1267,7 +1266,7 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if bool_return:
-            tup_return = (bool_return, self.df_analysis)
+            tup_return = (bool_return, self.df_metrics)
         else:
             tup_return = (bool_return, '||'.join(list_errors))
 
@@ -1323,7 +1322,7 @@ class Sp500Data(Sp500Base):
         bool_return = False
         string_trigger_rule_01 = '50 sma < 200 sma'
         string_trigger_rule_02 = r'50 sma / 200 sma within 5% of max low'
-        bool_df_analysis = bool(isinstance(self.df_analysis, pandas.DataFrame))
+        bool_df_metrics = bool(isinstance(self.df_metrics, pandas.DataFrame))
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -1333,33 +1332,33 @@ class Sp500Data(Sp500Base):
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
-        if bool_df_analysis:
+        if bool_df_metrics:
             #--------------------------------------------------------------------------------#
             # determine initial variables
             #--------------------------------------------------------------------------------#
 
             if self.bool_initial_load:
                 bool_in_market = True
-                float_delta_high_low = self.df_analysis['float_delta_50_200'].iloc[199]
-                self.df_analysis['float_delta_hl'].iloc[199] = float_delta_high_low
-                self.df_analysis['string_in_market'].iloc[199] = True
+                float_delta_high_low = self.df_metrics['float_delta_50_200'].iloc[199]
+                self.df_metrics['float_delta_hl'].iloc[199] = float_delta_high_low
+                self.df_metrics['string_in_market'].iloc[199] = True
                 int_index_start = 200
             else:
-                bool_in_market = bool(self.df_analysis['string_in_market'].iloc[0])
-                float_delta_high_low = self.df_analysis['float_delta_hl'].iloc[0]
+                bool_in_market = bool(self.df_metrics['string_in_market'].iloc[0])
+                float_delta_high_low = self.df_metrics['float_delta_hl'].iloc[0]
                 int_index_start = 1
 
             #--------------------------------------------------------------------------------#
             # calculate in out of the market
             #--------------------------------------------------------------------------------#
 
-            for int_index in range(int_index_start, self.df_analysis.shape[0]):
+            for int_index in range(int_index_start, self.df_metrics.shape[0]):
                 #--------------------------------------------------------------------------------#
                 # get metrics
                 #--------------------------------------------------------------------------------#
 
-                float_delta_high_low = self.df_analysis['float_delta_hl'].iloc[int_index - 1]
-                float_delta = self.df_analysis['float_delta_50_200'].iloc[int_index]
+                float_delta_high_low = self.df_metrics['float_delta_hl'].iloc[int_index - 1]
+                float_delta = self.df_metrics['float_delta_50_200'].iloc[int_index]
 
                 #--------------------------------------------------------------------------------#
                 # rules
@@ -1374,7 +1373,7 @@ class Sp500Data(Sp500Base):
                     if float_delta < 0:
                         bool_in_market = False
                         float_delta_high_low = float_delta
-                        self.df_analysis['string_trigger'].iloc[int_index] = string_trigger_rule_01
+                        self.df_metrics['string_trigger'].iloc[int_index] = string_trigger_rule_01
                     else:
                         if float_delta > float_delta_high_low:
                             float_delta_high_low = float_delta
@@ -1387,7 +1386,7 @@ class Sp500Data(Sp500Base):
                     if float_delta / float_delta_high_low < 0.05:
                         bool_in_market = True
                         float_delta_high_low = float_delta
-                        self.df_analysis['string_trigger'].iloc[int_index] = string_trigger_rule_02
+                        self.df_metrics['string_trigger'].iloc[int_index] = string_trigger_rule_02
                     else:
                         if float_delta < float_delta_high_low:
                             float_delta_high_low = float_delta
@@ -1396,9 +1395,9 @@ class Sp500Data(Sp500Base):
                 # update dataframe
                 #--------------------------------------------------------------------------------#
 
-                self.df_analysis['string_in_market'].iloc[int_index] = bool_in_market
-                self.df_analysis['float_delta_hl'].iloc[int_index] = float_delta_high_low
-                self.df_analysis['float_delta_div_hl'].iloc[int_index] = float_delta / float_delta_high_low
+                self.df_metrics['string_in_market'].iloc[int_index] = bool_in_market
+                self.df_metrics['float_delta_hl'].iloc[int_index] = float_delta_high_low
+                self.df_metrics['float_delta_div_hl'].iloc[int_index] = float_delta / float_delta_high_low
 
             #--------------------------------------------------------------------------------#
             # cleanup of nan(s)
@@ -1406,15 +1405,15 @@ class Sp500Data(Sp500Base):
 
             list_float_series = ['float_50_sma', 'float_200_sma', 'float_delta_50_200', 'float_delta_hl',
                 'float_delta_div_hl', 'float_velocity', 'float_accel']
-            self.df_analysis['string_trigger'] = self._nan_to_unknown(
-                self.df_analysis['string_trigger'],
+            self.df_metrics['string_trigger'] = self._nan_to_unknown(
+                self.df_metrics['string_trigger'],
                 'None')
-            self.df_analysis['string_in_market'] = self._nan_to_unknown(
-                self.df_analysis['string_in_market'],
+            self.df_metrics['string_in_market'] = self._nan_to_unknown(
+                self.df_metrics['string_in_market'],
                 False)
             for string_series_name in list_float_series:
-                self.df_analysis[string_series_name] = self._nan_to_unknown(
-                    self.df_analysis[string_series_name],
+                self.df_metrics[string_series_name] = self._nan_to_unknown(
+                    self.df_metrics[string_series_name],
                     0.0)
 
             #--------------------------------------------------------------------------------#
@@ -1430,7 +1429,7 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if bool_return:
-            tup_return = (bool_return, self.df_analysis)
+            tup_return = (bool_return, self.df_metrics)
         else:
             tup_return = (bool_return, '||'.join(list_errors))
 
@@ -1498,11 +1497,11 @@ class Sp500Data(Sp500Base):
         # add date_date column to DataFrame
         #--------------------------------------------------------------------------------#
 
-        self.df_analysis = self.df_analysis.assign(
-            date_date = self.df_analysis.index)
-        self.df_analysis['date_date'] = self.df_analysis['date_date'].apply(
+        self.df_metrics = self.df_metrics.assign(
+            date_date = self.df_metrics.index)
+        self.df_metrics['date_date'] = self.df_metrics['date_date'].apply(
             lambda x: x.strftime('%Y-%m-%d'))
-        self.df_analysis = self.df_analysis[list_columns]
+        self.df_metrics = self.df_metrics[list_columns]
 
         #--------------------------------------------------------------------------------#
         # get insert information for sql database
@@ -1511,7 +1510,7 @@ class Sp500Data(Sp500Base):
         list_insert_results = self.sql_conn.insert(
             m_string_table = string_table,
             m_list_columns = list_columns,
-            m_list_values = self.df_analysis.values.tolist())
+            m_list_values = self.df_metrics.values.tolist())
 
         #--------------------------------------------------------------------------------#
         # return value
@@ -1677,7 +1676,6 @@ class Sp500Analysis(Sp500Base):
         # data containers
         #--------------------------------------------------------------------------#
 
-        self.df_db_data = None
         self.df_analysis = None
 
         #--------------------------------------------------------------------------#
