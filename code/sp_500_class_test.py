@@ -105,15 +105,7 @@ def main_class_test(m_list_user):
         print(string_get_sp500_data)
         sp_data.data_wrapper()
     else:
-        #--------------------------------------------------------------------------#
-        # error in the setup / check of the sql database
-        #--------------------------------------------------------------------------#
-
-        string_error_00 = 'sql database is not setup for analysis; check code'
-        string_error_00 += ' and sql database for the proper setup'
-        if sp_data.bool_verbose:
-            print(string_error_00)
-        list_errors.append(string_error_00)
+        list_errors.append(sp_data.error_sql_db())
 
     #--------------------------------------------------------------------------------#
     # conduct analysis
@@ -122,9 +114,10 @@ def main_class_test(m_list_user):
     print('\n' + string_analyze_data)
     tup_anal_db_check = sp_analysis.check_sql_db()
     if tup_anal_db_check[0]:
+        print('\n' + string_analyze_data)
         sp_analysis.analysis_wrapper()
     else:
-        pass
+        list_errors.append(sp_analysis.error_sql_db())
 
     #ConductAnalysis(datetime_start, datetime_stop, float_money, float_annual_fee, m_list_user)
 
