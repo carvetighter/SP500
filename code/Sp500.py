@@ -137,23 +137,6 @@ class Sp500Base(object):
         self.dt_sp500_stop = datetime.now()
         self.string_sym_sp500 = '^SPX'
         self.bool_query_yahoo_finance = True
-
-        #--------------------------------------------------------------------------#
-        # data containers
-        #--------------------------------------------------------------------------#
-
-        self.df_raw_yahoo = None
-        self.df_analysis = None
-        self.df_db_data = None
-
-        #--------------------------------------------------------------------------#
-        # analysis attributes
-        #--------------------------------------------------------------------------#
-
-        datetime_start = datetime(1995, 1, 1)
-        datetime_stop = datetime.now()
-        float_money = 3000
-        float_annual_fee = 0.02
         
         #--------------------------------------------------------------------------#
         # other attributes
@@ -168,7 +151,9 @@ class Sp500Base(object):
     def check_sql_db(self):
         '''
         this method is a wrapper to check the sql database structure and
-        setup for the analysis
+        setup for the analysis;
+            - checks if the tables are in the database
+            - checks if all the columns are in the appropriate table
 
         Requirements:
         package SqlMethods
@@ -236,6 +221,12 @@ class Sp500Base(object):
             tup_return = tup_db_check
         else:
             tup_return = self._create_sql_db_tables(tup_db_check[1])
+        
+        #--------------------------------------------------------------------------------#
+        # update class tuple for db setup
+        #--------------------------------------------------------------------------------#
+
+        self.tup_sql_db_setup = tup_return
 
         #--------------------------------------------------------------------------------#
         # return value
@@ -333,7 +324,7 @@ class Sp500Base(object):
                             string_error_db_check_02 = 'table {0} columns do not match'
                             list_errors.append(string_error_db_check_02.format(string_table))
                     else:
-                        string_error_db_check_00 = 'table {0} error reteiving columns'
+                        string_error_db_check_00 = 'table {0} error retrieving columns'
                         list_errors.append(string_error_db_check_00.format(string_table))
                 else:
                     string_error_db_check_01 = 'table {0} does not exist'
@@ -634,8 +625,11 @@ class Sp500Data(Sp500Base):
             c_bool_verbose = c_bool_verbose)
         
         #--------------------------------------------------------------------------#
-        # sql db attributes
+        # data containers
         #--------------------------------------------------------------------------#
+
+        self.df_raw_stooq = None
+        self.df_to_db = None
 
     #--------------------------------------------------------------------------#
     # callable methods
@@ -966,7 +960,7 @@ class Sp500Data(Sp500Base):
                 self.dt_sp500_stop.strftime('%d %b %Y'))
         if self.bool_verbose:
             print(string_gyd)
-        
+
         #--------------------------------------------------------------------------------#
         # query sp500 data from stooq
         #--------------------------------------------------------------------------------#
@@ -990,7 +984,7 @@ class Sp500Data(Sp500Base):
             finally:
                 if int_query_count > 50:
                     break
-        
+
         #--------------------------------------------------------------------------------#
         # format dataframe
         #--------------------------------------------------------------------------------#
@@ -1626,6 +1620,225 @@ class Sp500Data(Sp500Base):
         pass
 
 class Sp500Analysis(Sp500Base):
+    '''
+    This class connects to an external data source and pulls the sp500 data,
+    conducts in / out calculations
+
+    Requirements:
+    package SqlMethods
+    package pandas
+    class Sp500Base()
+
+    Methods:
+    data_wrapper()
+
+    Attributes:
+    Sp500Base() attributes
+    '''
+
+    #--------------------------------------------------------------------------#
+    # constructor
+    #--------------------------------------------------------------------------#
+
+    def __init__(self, c_list_sql_up, c_bool_verbose):
+        '''
+        class construtor
+
+        Requirements:
+        package SqlMethods
+        package pandas
+
+        Inputs:
+        c_list_sql_up
+        Type: list
+        Desc: user and password for sql database
+        c_list_sql_up[0] -> type: string; user name
+        c_list_sql_up[1] -> type: string; password
+
+        c_bool_verbose
+        Type: boolean
+        Desc: flag if verbose output desired
+
+        Important Info:
+        1. None
+
+        Attributes:
+        Sp500Base() attributes
+        '''
+        #--------------------------------------------------------------------------#
+        # call parent constructor
+        #--------------------------------------------------------------------------#
+
+        super().__init__(
+            c_list_sql_up = c_list_sql_up,
+            c_bool_verbose = c_bool_verbose)
+        
+        #--------------------------------------------------------------------------#
+        # data containers
+        #--------------------------------------------------------------------------#
+
+        self.df_db_data = None
+        self.df_analysis = None
+
+        #--------------------------------------------------------------------------#
+        # analysis attributes
+        #--------------------------------------------------------------------------#
+
+        self.datetime_start = datetime(1995, 1, 1)
+        self.datetime_stop = datetime.now()
+        self.float_money = 3000
+        self.float_annual_fee = 0.02
+
+    #--------------------------------------------------------------------------#
+    # callable methods
+    #--------------------------------------------------------------------------#
+
+    def analysis_wrapper(self):
+        '''
+        this method is the wrapper to conduct the analysis of the sp500
+        data in the database and collected from stooq
+
+        Requirements:
+        package SqlMethods
+        package pandas
+
+        Inputs:
+        
+        Type: 
+        Desc: 
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: tuple
+        Desc: length = 2; 
+        tuple[0] -> type: boolean; if wrapper method is successful
+        tuple[1] -> type: string; if tuple[0] == True empty string; else
+            string with errors
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        list_errors = list()
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # ??
+        #--------------------------------------------------------------------------------#
+
+        if self.bool_verbose:
+            print('??')
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        return 
+
+    #--------------------------------------------------------------------------#
+    # supportive methods
+    #--------------------------------------------------------------------------#
+
+    def _get_data_from_db(self):
+        '''
+        this method pulls data from the sql database for analysis
+
+        Requirements:
+        package pandas
+        package SqlMethods
+
+        Inputs:
+        none
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: tuple
+        Desc: length = 2
+        tuple[0] -> type: boolean; True if method executes as desgned
+            and data is in dataframe for analysis
+        tuple[1] -> type: list or empty string
+            if tuple[0] == True; empty string
+            if tuple[0] == False; list of errors as strings
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        list_errors = list()
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        bool_return = True
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # sub-section comment
+        #--------------------------------------------------------------------------------#
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # sectional comment
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # variable / object cleanup
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        pass
+        
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
         below is an example of a good method comment

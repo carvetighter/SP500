@@ -39,6 +39,9 @@ def main_class_test(m_list_user):
     sp_data = Sp500Data(
         c_list_sql_up = m_list_user,
         c_bool_verbose = True)
+    sp_analysis = Sp500Analysis(
+        c_list_sql_up = m_list_user,
+        c_bool_verbose = True)
 
     #--------------------------------------------------------------------------------#
     # time declarations
@@ -117,7 +120,11 @@ def main_class_test(m_list_user):
     #--------------------------------------------------------------------------------#
 
     print('\n' + string_analyze_data)
-    
+    tup_anal_db_check = sp_analysis.check_sql_db()
+    if tup_anal_db_check[0]:
+        sp_analysis.analysis_wrapper()
+    else:
+        pass
 
     #ConductAnalysis(datetime_start, datetime_stop, float_money, float_annual_fee, m_list_user)
 
