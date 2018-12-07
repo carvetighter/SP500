@@ -81,12 +81,23 @@ class Sp500Base(object):
             [r'<user name>', r'<sql server name>', r'<user password>', r'<database name>']
 
         Attributes:
-        ??
+        sql_conn
+        Type: SqlMethods object
+        Desc: connection to local sql express database on external drive
+
+        dict_sp500_tables
+        Type: dictionary
+        Desc: the tables in the database segemented by category
+            level 00 -> 'data' or 'analysis'
+            level 01 -> 
+                'table_name' -> string; format 'schema name. table name'
+                'col_dtype' -> list; sql column data types to create table
+                'col_names' -> list; column names
         '''
         #--------------------------------------------------------------------------#
         # sql db connection attributes
         #--------------------------------------------------------------------------#
-        
+
         self.string_sql_db = r'Finance'
         self.string_sql_server = r'localhost\SQLEXPRESS'
         self.sql_conn = SqlMethods(
@@ -539,9 +550,6 @@ class Sp500Base(object):
         # variable / object declarations
         #--------------------------------------------------------------------------#
 
-        # type casting for visual studio
-        m_pandas_series = pandas.Series(m_pandas_series)
-
         # variables
         if m_replacement == '':
             m_replacement = 'Unknown'
@@ -571,119 +579,21 @@ class Sp500Base(object):
 
         return m_pandas_series
 
-    def def_Methods(self, list_cluster_results, array_sparse_matrix):
-        '''
-        below is an example of a good method comment
-
-        ---------------------------------------------------------------------------------------------------------------------------------------------------
-
-        this method implements the evauluation criterea for the clusters of each clutering algorithms
-        criterea:
-               - 1/2 of the clusters for each result need to be:
-                   - the average silhouette score of the cluster needs to be higher then the silhouette score of all the clusters
-                     combined
-                   - the standard deviation of the clusters need to be lower than the standard deviation of all the clusters
-                     combined
-               - silhouette value for the dataset must be greater than 0.5
-
-        Requirements:
-        package time
-        package numpy
-        package statistics
-        package sklearn.metrics
-
-        Inputs:
-        list_cluster_results
-        Type: list
-        Desc: the list of parameters for the clustering object
-        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
-                         or dense array
-        list[x][1] -> type: string; the cluster ID with the parameters
-
-        array_sparse_matrix
-        Type: numpy array
-        Desc: a sparse matrix of the samples used for clustering
-
-        Important Info:
-        None
-
-        Return:
-        object
-        Type: list
-        Desc: this of the clusters that meet the evaluation criterea
-        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
-                        or dense array
-        list[x][1] -> type: string; the cluster ID with the parameters
-        list[x][2] -> type: float; silhouette average value for the entire set of data
-        list[x][3] -> type: array; 1 dimensional array of silhouette values for each data sample
-        list[x][4] -> type: list; list of lists, the cluster and the average silhoutte value for each cluster, the orders is sorted 
-                            highest to lowest silhoutte value
-                            list[x][4][x][0] -> int; cluster label
-                            list[x][4][x][1] -> float; cluster silhoutte value
-        list[x][5] -> type: list; a list that contains the cluster label and the number of samples in each cluster
-                           list[x][5][x][0] -> int; cluster label
-                           list[x][5][x][1] -> int; number of samples in cluster list[x][5][x][0]
-        '''
-
-        #--------------------------------------------------------------------------------#
-        # objects declarations
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # time declarations
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # lists declarations
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # variables declarations
-        #--------------------------------------------------------------------------------#
-
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # Start
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-
-        #--------------------------------------------------------------------------------#
-        # sub-section comment
-        #--------------------------------------------------------------------------------#
-
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # sectional comment
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-
-        #--------------------------------------------------------------------------------#
-        # variable / object cleanup
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # return value
-        #--------------------------------------------------------------------------------#
-
-        pass
-
 class Sp500Data(Sp500Base):
     '''
-    ??
+    This class connects to an external data source and pulls the sp500 data,
+    conducts in / out calculations
 
     Requirements:
     package SqlMethods
     package pandas
+    class Sp500Base()
 
     Methods:
-    ??
+    data_wrapper()
 
     Attributes:
-    ??
+    Sp500Base() attributes
     '''
 
     #--------------------------------------------------------------------------#
@@ -710,10 +620,10 @@ class Sp500Data(Sp500Base):
         Desc: flag if verbose output desired
 
         Important Info:
-        1. ??
+        1. None
 
         Attributes:
-        ??
+        calss Sp500Base() attributes
         '''
         #--------------------------------------------------------------------------#
         # call parent constructor
@@ -749,9 +659,12 @@ class Sp500Data(Sp500Base):
         None
 
         Return:
-        
-        Type: 
-        Desc: 
+        object
+        Type: tuple
+        Desc: length = 2; 
+        tuple[0] -> type: boolean; if wrapper method is successful
+        tuple[1] -> type: string; if tuple[0] == True empty string; else
+            string with errors
         '''
 
         #--------------------------------------------------------------------------------#
@@ -772,7 +685,6 @@ class Sp500Data(Sp500Base):
         # variables declarations
         #--------------------------------------------------------------------------------#
 
-        bool_return = False
         string_getting_yahoo_data = 'getting data from yahoo finance from {0} to {1}'
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -878,23 +790,11 @@ class Sp500Data(Sp500Base):
             if self.bool_verbose:
                 print(string_error_sql)
 
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # sectional comment
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-
-        #--------------------------------------------------------------------------------#
-        # variable / object cleanup
-        #--------------------------------------------------------------------------------#
-
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
 
-        pass
+        return tup_insert_results
 
     #--------------------------------------------------------------------------#
     # supportive methods
@@ -1607,7 +1507,7 @@ class Sp500Data(Sp500Base):
         self.df_analysis = self.df_analysis.assign(
             date_date = self.df_analysis.index)
         self.df_analysis['date_date'] = self.df_analysis['date_date'].apply(
-            lambda x: x._date_repr)
+            lambda x: x.strftime('%Y-%m-%d'))
         self.df_analysis = self.df_analysis[list_columns]
 
         #--------------------------------------------------------------------------------#
@@ -1726,7 +1626,105 @@ class Sp500Data(Sp500Base):
         pass
 
 class Sp500Analysis(Sp500Base):
-    pass
+    def def_Methods(self, list_cluster_results, array_sparse_matrix):
+        '''
+        below is an example of a good method comment
+
+        ---------------------------------------------------------------------------------------------------------------------------------------------------
+
+        this method implements the evauluation criterea for the clusters of each clutering algorithms
+        criterea:
+               - 1/2 of the clusters for each result need to be:
+                   - the average silhouette score of the cluster needs to be higher then the silhouette score of all the clusters
+                     combined
+                   - the standard deviation of the clusters need to be lower than the standard deviation of all the clusters
+                     combined
+               - silhouette value for the dataset must be greater than 0.5
+
+        Requirements:
+        package time
+        package numpy
+        package statistics
+        package sklearn.metrics
+
+        Inputs:
+        list_cluster_results
+        Type: list
+        Desc: the list of parameters for the clustering object
+        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
+                         or dense array
+        list[x][1] -> type: string; the cluster ID with the parameters
+
+        array_sparse_matrix
+        Type: numpy array
+        Desc: a sparse matrix of the samples used for clustering
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: list
+        Desc: this of the clusters that meet the evaluation criterea
+        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
+                        or dense array
+        list[x][1] -> type: string; the cluster ID with the parameters
+        list[x][2] -> type: float; silhouette average value for the entire set of data
+        list[x][3] -> type: array; 1 dimensional array of silhouette values for each data sample
+        list[x][4] -> type: list; list of lists, the cluster and the average silhoutte value for each cluster, the orders is sorted 
+                            highest to lowest silhoutte value
+                            list[x][4][x][0] -> int; cluster label
+                            list[x][4][x][1] -> float; cluster silhoutte value
+        list[x][5] -> type: list; a list that contains the cluster label and the number of samples in each cluster
+                           list[x][5][x][0] -> int; cluster label
+                           list[x][5][x][1] -> int; number of samples in cluster list[x][5][x][0]
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # sub-section comment
+        #--------------------------------------------------------------------------------#
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # sectional comment
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # variable / object cleanup
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        pass
 
 class Sp500Visualizations(Sp500Base):
     pass
