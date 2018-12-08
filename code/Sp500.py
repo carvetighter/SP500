@@ -696,7 +696,7 @@ class Sp500Data(Sp500Base):
     def data_wrapper(self):
         '''
         this method is the wrapper to pull data from the database
-        and yahoo finance
+        and stooq
 
         Requirements:
         package SqlMethods
@@ -1743,6 +1743,9 @@ class Sp500Analysis(Sp500Base):
         self.datetime_stop = datetime.now()
         self.float_money = 3000
         self.float_annual_fee = 0.02
+        self.string_date_format = '%Y-%m-%d'
+        self.string_date_start = self.datetime_start.strftime(self.string_date_format)
+        self.string_date_stop = self.datetime_stop.strftime(self.string_date_format)
 
     #--------------------------------------------------------------------------#
     # callable methods
@@ -1801,11 +1804,21 @@ class Sp500Analysis(Sp500Base):
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
         #--------------------------------------------------------------------------------#
-        # ??
+        # get data from database
         #--------------------------------------------------------------------------------#
 
-        if self.bool_verbose:
-            print('??')
+        tup_db_data = self._get_data_from_db()
+
+        #--------------------------------------------------------------------------------#
+        # conduct analysis of data
+        #--------------------------------------------------------------------------------#
+
+        if tup_db_data[0]:
+            tup_analysis = self._analysis()
+        else:
+            list_db_errors = tup_db_data[1].split('||')
+            list_errors.extend(list_db_errors)
+            tup_analysis = (False, '')
 
         #--------------------------------------------------------------------------------#
         # return value
@@ -1840,8 +1853,8 @@ class Sp500Analysis(Sp500Base):
         tuple[0] -> type: boolean; True if method executes as desgned
             and data is in dataframe for analysis
         tuple[1] -> type: list or empty string
-            if tuple[0] == True; empty string
-            if tuple[0] == False; list of errors as strings
+            if tuple[0] == True; pandas.DataFrame
+            if tuple[0] == False; string of errors seperated by '||'
         '''
 
         #--------------------------------------------------------------------------------#
@@ -1862,7 +1875,97 @@ class Sp500Analysis(Sp500Base):
         # variables declarations
         #--------------------------------------------------------------------------------#
 
-        bool_return = True
+        bool_return = False
+        string_sql_query_where = "date_date >= '" + self.string_date_start
+        string_sql_query_where += "' and date_date <= '" + self.string_date_stop
+        string_sql_query_where += "'"
+        string_sql_query_end = 'order by date_date'
+        string_sql_table = self.dict_sp500_tables.get('data')['table_name']
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # conduct sql query
+        #--------------------------------------------------------------------------------#
+
+        if self.sql_conn.bool_is_connected:
+            string_sql_query = self.sql_conn.gen_select_statement(
+                m_string_select = '*',
+                m_string_from = string_sql_table,
+                m_string_where = string_sql_query_where,
+                m_string_end = string_sql_query_end)
+
+            try:
+                self.df_analysis = pandas.read_sql(
+                    sql = string_sql_query,
+                    con = self.sql_conn._list_conn[1])
+            except Exception as e:
+                list_errors.append('pandas.read_sql() error: ' + str(e.args))
+            else:
+                if isinstance(self.df_analysis, pandas.DataFrame) and \
+                  not self.df_analysis.empty:
+                    bool_return = True
+                else:
+                    list_errors.append(
+                        'data from database is not in a dataframe or dataframe is empty')
+            finally:
+                pass
+        else:
+            list_errors.append('not connected to sql database')
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        if bool_return:
+            tup_return = (bool_return, self.df_analysis)
+        else:
+            tup_return = (bool_return, '||'.join(list_errors))
+
+        return tup_return
+
+    def _analysis(self):
+        '''
+        this method conducts the analysis of the data pulled from the database
+
+        Requirements:
+        package pandas
+
+        Inputs:
+        None
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: tuple
+        Desc: ??
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -1893,7 +1996,8 @@ class Sp500Analysis(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         pass
-        
+
+
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
         below is an example of a good method comment
