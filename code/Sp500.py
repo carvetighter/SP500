@@ -128,7 +128,7 @@ class Sp500Base(object):
                     'string_symbol']}}
         self.tup_sql_db_setup = (False, 'not checked')
         self.bool_initial_load = False
-        
+
         #--------------------------------------------------------------------------#
         # other attributes
         #--------------------------------------------------------------------------#
@@ -639,7 +639,7 @@ class Sp500Data(Sp500Base):
     # constructor
     #--------------------------------------------------------------------------#
 
-    def __init__(self, c_list_sql_up, c_bool_verbose):
+    def __init__(self, csd_list_sql_up, csd_bool_verbose):
         '''
         class construtor
 
@@ -668,9 +668,9 @@ class Sp500Data(Sp500Base):
         # call parent constructor
         #--------------------------------------------------------------------------#
 
-        super().__init__(
-            c_list_sql_up = c_list_sql_up,
-            c_bool_verbose = c_bool_verbose)
+        Sp500Base.__init__(
+            c_list_sql_up = csd_list_sql_up,
+            c_bool_verbose = csd_bool_verbose)
         
         #--------------------------------------------------------------------------#
         # get data attributes
@@ -1696,7 +1696,7 @@ class Sp500Analysis(Sp500Base):
     # constructor
     #--------------------------------------------------------------------------#
 
-    def __init__(self, c_list_sql_up, c_bool_verbose):
+    def __init__(self, ca_list_sql_up, ca_bool_verbose):
         '''
         class construtor
 
@@ -1725,9 +1725,9 @@ class Sp500Analysis(Sp500Base):
         # call parent constructor
         #--------------------------------------------------------------------------#
 
-        super().__init__(
-            c_list_sql_up = c_list_sql_up,
-            c_bool_verbose = c_bool_verbose)
+        Sp500Base.__init__(
+            c_list_sql_up = ca_list_sql_up,
+            c_bool_verbose = ca_bool_verbose)
         
         #--------------------------------------------------------------------------#
         # data containers
