@@ -680,7 +680,10 @@ class Sp500Data(Sp500Base):
         # get data attributes
         #--------------------------------------------------------------------------#
         
+        dict_table = self.dict_sp500_tables.get('data')
         self.bool_query_stooq_data = True
+        self.string_table = dict_table.get('table_name')
+        self.list_columns = dict_table.get('col_names')
         
         #--------------------------------------------------------------------------#
         # data containers
@@ -915,10 +918,7 @@ class Sp500Data(Sp500Base):
         # configure query
         #--------------------------------------------------------------------------------#
 
-        dict_table = self.dict_sp500_tables.get('data', None)
-        string_table = dict_table.get('table_name', None)
-        string_query = string_sql_query_get_max_date.format(string_table)
-        del dict_table, string_table
+        string_query = string_sql_query_get_max_date.format(self.string_table)
 
         #--------------------------------------------------------------------------------#
         # get max date
@@ -998,8 +998,8 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         int_query_count = 1
-        string_error_yahoo_data_00 = 'in query {0} of stooq error {1} occured'
-        string_get_yahoo_data = 'getting data for sp500 from {0} to {1}'
+        string_error_data_00 = 'in query {0} of stooq error {1} occured'
+        string_get_data = 'getting data for sp500 from {0} to {1}'
         bool_return = False
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -1014,11 +1014,11 @@ class Sp500Data(Sp500Base):
         # verbose string
         #--------------------------------------------------------------------------------#
 
-        string_gyd = string_get_yahoo_data.format(
+        string_gd = string_get_data.format(
                 self.dt_sp500_start.strftime('%d %b %Y'),
                 self.dt_sp500_stop.strftime('%d %b %Y'))
         if self.bool_verbose:
-            print(string_gyd)
+            print(string_gd)
 
         #--------------------------------------------------------------------------------#
         # query sp500 data from stooq
@@ -1031,10 +1031,10 @@ class Sp500Data(Sp500Base):
                     start = self.dt_sp500_start.strftime('%Y-%m-%d'),
                     end = self.dt_sp500_stop.strftime('%Y-%m-%d'))
             except Exception as e:
-                string_error_yd_00 = string_error_yahoo_data_00.format(
+                string_error_00 = string_error_data_00.format(
                     int_query_count, str(e.args[0]))
                 if self.bool_verbose:
-                    print(string_error_yd_00)
+                    print(string_error_00)
                 int_query_count += 1
             else:
                 self.bool_query_stooq_data = False
@@ -1051,7 +1051,7 @@ class Sp500Data(Sp500Base):
         if not self.bool_query_stooq_data:
             bool_return = True
         else:
-            list_errors.append(string_error_yd_00)
+            list_errors.append(string_error_00)
 
         #--------------------------------------------------------------------------------#
         # variable / object cleanup
@@ -1130,19 +1130,11 @@ class Sp500Data(Sp500Base):
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
         #--------------------------------------------------------------------------------#
-        # get table name
-        #--------------------------------------------------------------------------------#
-
-        dict_table = self.dict_sp500_tables.get('data')
-        string_table = dict_table.get('table_name')
-        list_columns = dict_table.get('col_names')
-
-        #--------------------------------------------------------------------------------#
         # query database
         #--------------------------------------------------------------------------------#
 
         string_query = string_200_query_temp.format(
-            string_table,
+            self.string_table,
             string_query_date)
         list_data = self.sql_conn.query_select(string_query)
 
@@ -1153,7 +1145,7 @@ class Sp500Data(Sp500Base):
         if list_data[0]:
             df_200 = pandas.DataFrame(
                 data = list_data[1],
-                columns = list_columns)
+                columns = self.list_columns)
             df_200 = df_200.sort_values(
                 by = ['date_date'],
                 ascending = True)
@@ -1248,18 +1240,12 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if bool_db_data and bool_raw_data:
-            #--------------------------------------------------------------------------------#
-            # get column information
-            #--------------------------------------------------------------------------------#
-
-            dict_table = self.dict_sp500_tables.get('data', None)
-            list_columns = dict_table.get('col_names')
 
             #--------------------------------------------------------------------------------#
             # combine dataframes
             #--------------------------------------------------------------------------------#
 
-            df_sp500 = pandas.DataFrame(columns = list_columns[1:])
+            df_sp500 = pandas.DataFrame(columns = self.list_columns[1:])
             df_sp500['float_close'] = self.df_raw_stooq['Close']
             df_sp500.index = self.df_raw_stooq.index
             df_calc = pandas.concat([self.df_200_data, df_sp500], axis = 0)
@@ -1294,25 +1280,44 @@ class Sp500Data(Sp500Base):
                         list_velocity[int_index] - list_velocity[int_index - 1])
             series_velocity = pandas.Series(data = list_velocity)
             series_acceleration = pandas.Series(data = list_acceleration)
+            del list_velocity, list_acceleration
+
+            #--------------------------------------------------------------------------------#
+            # fix string_in_market
+            #--------------------------------------------------------------------------------#
+
+            # if there is a zero
+            array_bool_sim_00 = df_calc['string_in_market'] == 0
+            array_bool_sim_01 = df_calc['string_in_market'] == '0'
+            array_bool_sim_02 = array_bool_sim_00 | array_bool_sim_01
+
+            # if there is a 1
+            array_bool_sim_03 = df_calc['string_in_market'] == 1
+            array_bool_sim_04 = df_calc['string_in_market'] == '1'
+            array_bool_sim_05 = array_bool_sim_03 | array_bool_sim_04
+
+            df_calc['string_in_market'][array_bool_sim_02] = 'False'
+            df_calc['string_in_market'][array_bool_sim_05] = 'True'
+            del array_bool_sim_00, array_bool_sim_01, array_bool_sim_02
+            del array_bool_sim_03, array_bool_sim_04, array_bool_sim_05
 
             #--------------------------------------------------------------------------------#
             # combine into dataframe
             #--------------------------------------------------------------------------------#
 
             bool_return = True
-            self.df_metrics = pandas.DataFrame()
-            self.df_metrics = self.df_metrics.assign(float_close = df_calc['float_close'].values)
-            self.df_metrics = self.df_metrics.assign(float_50_sma = rolling_50_sma.values)
-            self.df_metrics = self.df_metrics.assign(float_200_sma = rolling_200_sma.values)
-            self.df_metrics = self.df_metrics.assign(float_delta_50_200 = series_delta_50_200.values)
-            self.df_metrics = self.df_metrics.assign(float_velocity = series_velocity.values)
-            self.df_metrics = self.df_metrics.assign(float_accel = series_acceleration.values)
-            self.df_metrics = self.df_metrics.assign(string_in_market = df_calc['string_in_market'].values)
-            self.df_metrics = self.df_metrics.assign(string_trigger = df_calc['string_trigger'].values)
-            self.df_metrics = self.df_metrics.assign(float_delta_hl = df_calc['float_delta_hl'].values)
-            self.df_metrics = self.df_metrics.assign(float_delta_div_hl = df_calc['float_delta_div_hl'].values)
-            self.df_metrics = self.df_metrics[list_columns[1:]]
-            self.df_metrics.index = df_calc.index
+            self.df_metrics = pandas.DataFrame(index = df_calc.index)
+            self.df_metrics = self.df_metrics.assign(float_close = df_calc['float_close'])
+            self.df_metrics = self.df_metrics.assign(float_50_sma = rolling_50_sma)
+            self.df_metrics = self.df_metrics.assign(float_200_sma = rolling_200_sma)
+            self.df_metrics = self.df_metrics.assign(float_delta_50_200 = series_delta_50_200)
+            self.df_metrics = self.df_metrics.assign(float_velocity = series_velocity)
+            self.df_metrics = self.df_metrics.assign(float_accel = series_acceleration)
+            self.df_metrics = self.df_metrics.assign(string_in_market = df_calc['string_in_market'])
+            self.df_metrics = self.df_metrics.assign(string_trigger = df_calc['string_trigger'])
+            self.df_metrics = self.df_metrics.assign(float_delta_hl = df_calc['float_delta_hl'])
+            self.df_metrics = self.df_metrics.assign(float_delta_div_hl = df_calc['float_delta_div_hl'])
+            self.df_metrics = self.df_metrics[self.list_columns[1:]]
         else:
             string_error_calc_00 = 'either the raw data from sp500 or database data is not present'
             list_errors.append(string_error_calc_00)
@@ -1541,14 +1546,9 @@ class Sp500Data(Sp500Base):
         # lists declarations
         #--------------------------------------------------------------------------------#
 
-        dict_table = self.dict_sp500_tables.get('data')
-        list_columns = dict_table.get('col_names')
-
         #--------------------------------------------------------------------------------#
         # variables declarations
         #--------------------------------------------------------------------------------#
-
-        string_table = dict_table.get('table_name')
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -1566,15 +1566,15 @@ class Sp500Data(Sp500Base):
             date_date = self.df_metrics.index)
         self.df_metrics['date_date'] = self.df_metrics['date_date'].apply(
             lambda x: x.strftime('%Y-%m-%d'))
-        self.df_metrics = self.df_metrics[list_columns]
+        self.df_metrics = self.df_metrics[self.list_columns]
 
         #--------------------------------------------------------------------------------#
         # get insert information for sql database
         #--------------------------------------------------------------------------------#
 
         list_insert_results = self.sql_conn.insert(
-            m_string_table = string_table,
-            m_list_columns = list_columns,
+            m_string_table = self.string_table,
+            m_list_columns = self.list_columns,
             m_list_values = self.df_metrics.values.tolist())
 
         #--------------------------------------------------------------------------------#
