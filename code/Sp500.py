@@ -1873,9 +1873,13 @@ class Sp500Analysis(Sp500Base):
         # lists declarations
         #--------------------------------------------------------------------------------#
 
+        list_errors = list()
+
         #--------------------------------------------------------------------------------#
         # variables declarations
         #--------------------------------------------------------------------------------#
+
+        bool_return = True
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -1956,16 +1960,16 @@ class Sp500Analysis(Sp500Base):
             float_man_fee = 0
             float_gm_with_fee = self.float_money
             float_gm_without_fee = self.float_money
-            for int_index in range(1, self.df_analysis.shape[0]):
+            for int_index in range(1, len(self.df_analysis)):
                 # get dates
-                string_date_calc_start = self.df_analysis['date_date'].ix[int_index - 1]
-                string_date_calc_stop = self.df_analysis['date_date'].ix[int_index]
+                string_date_calc_start = self.df_analysis['date_date'].iloc[int_index - 1]
+                string_date_calc_stop = self.df_analysis['date_date'].iloc[int_index]
                 datetime_calc_start = datetime.strptime(string_date_calc_start, '%Y-%m-%d')
                 datetime_calc_stop = datetime.strptime(string_date_calc_stop, '%Y-%m-%d')
     
                 # get closes
-                float_close_calc_start = self.df_analysis['float_close'].ix[int_index - 1]
-                float_close_calc_stop = self.df_analysis['float_close'].ix[int_index]
+                float_close_calc_start = self.df_analysis['float_close'].iloc[int_index - 1]
+                float_close_calc_stop = self.df_analysis['float_close'].iloc[int_index]
                 float_ratio_return = float_close_calc_stop / float_close_calc_start
                 if int_index == 1:
                     float_close_initial = float_close_calc_start
@@ -1973,8 +1977,8 @@ class Sp500Analysis(Sp500Base):
                     float_close_final = float_close_calc_stop
     
                 # get market status
-                string_ms_start = self.df_analysis['string_in_market'].ix[int_index - 1]
-                string_ms_stop = self.df_analysis['string_in_market'].ix[int_index]
+                string_ms_start = self.df_analysis['string_in_market'].iloc[int_index - 1]
+                string_ms_stop = self.df_analysis['string_in_market'].iloc[int_index]
     
                 # calc amounts
                 if string_ms_start == 'True' and string_ms_stop == 'True':
@@ -2005,23 +2009,30 @@ class Sp500Analysis(Sp500Base):
             # buy a hold calculation
             float_buy_hold = self.float_money * (float_close_final / float_close_initial)
 
-        #--------------------------------------------------------------------------------#
-        # insert results into database
-        #--------------------------------------------------------------------------------#
-
-        print('inserting results of analysis into database')
-        list_sql_insert_columns = ['date_analysis', 'date_start', 'date_stop', 'dollar_start', 'int_days_range',
-            'int_days_in_market', 'int_days_good', 'int_days_bad', 'string_in_market', 'float_ann_fee',
-            'dollar_gm_with_fee', 'dollar_man_fee', 'dollar_buy_hold', 'dollar_gm_no_fee', 'string_symbol']
-        list_sql_insert_values = [self.string_date_stop, string_date_first, string_date_last, self.float_money,
-            int_days_in_range, int_days_in_market, int_days_good, int_days_bad, string_market_status, 
-            self.float_annual_fee, float_gm_with_fee, float_man_fee, float_buy_hold, float_gm_without_fee, 
-            self. string_sym_sp500]
-
-        list_insert_dummy = self.sql_conn.insert(
-            m_string_table =  self.string_table,
-            m_list_columns = list_sql_insert_columns,
-            m_list_values = list_sql_insert_values)
+            #--------------------------------------------------------------------------------#
+            # insert results into database
+            #--------------------------------------------------------------------------------#
+    
+            print('inserting results of analysis into database')
+            list_sql_insert_columns = ['date_analysis', 'date_start', 'date_stop', 'dollar_start', 'int_days_range',
+                'int_days_in_market', 'int_days_good', 'int_days_bad', 'string_in_market', 'float_ann_fee',
+                'dollar_gm_with_fee', 'dollar_man_fee', 'dollar_buy_hold', 'dollar_gm_no_fee', 'string_symbol']
+            list_sql_insert_values = [self.string_date_stop, string_date_first, string_date_last, self.float_money,
+                int_days_in_range, int_days_in_market, int_days_good, int_days_bad, string_market_status, 
+                self.float_annual_fee, float_gm_with_fee, float_man_fee, float_buy_hold, float_gm_without_fee, 
+                self. string_sym_sp500]
+    
+            list_insert_dummy = self.sql_conn.insert(
+                m_string_table =  self.string_table,
+                m_list_columns = list_sql_insert_columns,
+                m_list_values = list_sql_insert_values)
+            
+            if list_insert_dummy[0] == False:
+                list_errors.append('insert of analysis data failed into local database')
+                bool_return = False
+        else:
+            list_errors.append('analysis dataframe is empty')
+            bool_return = False
 
         #--------------------------------------------------------------------------------#
         # variable / object cleanup
@@ -2031,7 +2042,12 @@ class Sp500Analysis(Sp500Base):
         # return value
         #--------------------------------------------------------------------------------#
 
-        return
+        if bool_return:
+            tup_return = (bool_return, '')
+        else:
+            tup_return = (bool_return, '||'.join(list_errors))
+
+        return tup_return
 
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
