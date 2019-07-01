@@ -37,11 +37,11 @@ def main_class_test(m_list_user):
     #--------------------------------------------------------------------------------#
 
     sp_data = Sp500Data(
-        c_list_sql_up = m_list_user,
-        c_bool_verbose = True)
+        csd_list_sql_up = m_list_user,
+        csd_bool_verbose = True)
     sp_analysis = Sp500Analysis(
-        c_list_sql_up = m_list_user,
-        c_bool_verbose = True)
+        ca_list_sql_up = m_list_user,
+        ca_bool_verbose = True)
 
     #--------------------------------------------------------------------------------#
     # time declarations
@@ -129,4 +129,4 @@ def main_class_test(m_list_user):
 
     #CreateVisualization(datetime_start, datetime_stop, m_list_user)
 
-    pass
+    return

@@ -111,7 +111,7 @@ class Sp500Base(object):
 
         #--------------------------------------------------------------------------#
         # sql db data attributes
-        #--------------------------------------------------------------------------#
+        #------------------------------------------------------git st--------------------#
 
         self.dict_sp500_tables = {
             'data':{
@@ -1646,7 +1646,7 @@ class Sp500Analysis(Sp500Base):
         self.string_date_format = '%Y-%m-%d'
         self.string_date_start = self.datetime_start.strftime(self.string_date_format)
         self.string_date_stop = self.datetime_stop.strftime(self.string_date_format)
-        self.string_table = self.dict.get('analysis', dict()).get('table_name', '')
+        self.string_table = self.dict_sp500_tables.get('analysis', dict()).get('table_name', '')
 
     #--------------------------------------------------------------------------#
     # callable methods
@@ -1885,53 +1885,51 @@ class Sp500Analysis(Sp500Base):
             #--------------------------------------------------------------------------------#
             # day counts
             #--------------------------------------------------------------------------------#
+
             print('conducting days calculations')
             # days pulled from database
-            string_date_first = self.df_analysis['date_date'].ix[0]
-            string_date_last = self.df_analysis['date_date'].ix[self.df_analysis.shape[0] - 1]
+            string_date_first = self.df_analysis['date_date'].iloc[0]
+            string_date_last = self.df_analysis['date_date'].iloc[len(self.df_analysis) - 1]
     
             # days in range
-            int_days_in_range = self.df_analysis.shape[0]
+            int_days_in_range = len(self.df_analysis)
     
             # market status
-            string_market_status = self.df_analysis['string_in_market'].ix[self.df_analysis.shape[0] - 1]
+            string_market_status = self.df_analysis['string_in_market'].iloc[len(self.df_analysis) - 1]
     
             # days in the market
             array_in_market = self.df_analysis['string_in_market'] == 'True'
             dataframe_in_market = self.df_analysis.ix[array_in_market]
-            int_days_in_market = dataframe_in_market.shape[0]
+            int_days_in_market = len(dataframe_in_market)
     
             # bad days
             array_trigger = self.df_analysis['string_trigger'] != 'None'
-            dataframe_trigger = self.df_analysis.ix[array_trigger]
+            dataframe_trigger = self.df_analysis.loc[array_trigger]
             
             # replace index to interate
-            list_index_new = list()
-            for int_index in range(0, len(dataframe_trigger.index)):
-                list_index_new.append(int_index)
-            dataframe_trigger.index = list_index_new
+            dataframe_trigger = dataframe_trigger.reset_index(drop = True)
             
             int_days_bad = 0
-            for int_index in range(0, dataframe_trigger.shape[0] - 1):
+            for int_index in range(0, len(dataframe_trigger) - 1):
                 # get the start market status
-                if int_index == 0:
-                    string_status_start = self.df_analysis['string_in_market'].ix[0]
-                else:
-                    string_status_start = dataframe_trigger['string_in_market'].ix[int_index]
+                # if int_index == 0:
+                #     string_status_start = self.df_analysis['string_in_market'].iloc[0]
+                # else:
+                string_status_start = dataframe_trigger['string_in_market'].iloc[int_index]
                 
                 # get the end market satus
-                string_status_end = dataframe_trigger['string_in_market'].ix[int_index + 1]
+                string_status_end = dataframe_trigger['string_in_market'].iloc[int_index + 1]
                 
                 # calculate based on the a change of market status or not
                 if string_status_start == 'True' and string_status_end == 'False':
                     # get sp500 values
-                    float_sp500_start = dataframe_trigger['float_close'].ix[int_index]
-                    float_sp500_end = dataframe_trigger['float_close'].ix[int_index + 1]
+                    float_sp500_start = dataframe_trigger['float_close'].iloc[int_index]
+                    float_sp500_end = dataframe_trigger['float_close'].iloc[int_index + 1]
     
                     # get bad days
                     if float_sp500_end < float_sp500_start:
-                        string_date_bad_start = dataframe_trigger['date_date'].ix[int_index]
-                        string_date_bad_end = dataframe_trigger['date_date'].ix[int_index + 1]
+                        string_date_bad_start = dataframe_trigger['date_date'].iloc[int_index]
+                        string_date_bad_end = dataframe_trigger['date_date'].iloc[int_index + 1]
                         datetime_bad_start = datetime.strptime(string_date_bad_start, '%Y-%m-%d')
                         datetime_bad_end = datetime.strptime(string_date_bad_end, '%Y-%m-%d')
                         timedelta_bad = datetime_bad_end - datetime_bad_start
@@ -1992,8 +1990,8 @@ class Sp500Analysis(Sp500Base):
                     datetime_quarter_start = datetime_calc_stop + timedelta(days = 1)
     
                     # calculate management fee and reduce balance
-                    float_man_fee = float_man_fee + (float_gm_with_fee * float_annual_fee / 4)
-                    float_gm_with_fee = float_gm_with_fee * (1 - (float_annual_fee / 4))
+                    float_man_fee = float_man_fee + (float_gm_with_fee * self.float_annual_fee / 4)
+                    float_gm_with_fee = float_gm_with_fee * (1 - (self.float_annual_fee / 4))
     
             # buy a hold calculation
             float_buy_hold = self.float_money * (float_close_final / float_close_initial)
@@ -2001,20 +1999,20 @@ class Sp500Analysis(Sp500Base):
         #--------------------------------------------------------------------------------#
         # insert results into database
         #--------------------------------------------------------------------------------#
-    
+
         print('inserting results of analysis into database')
-        list_sql_insert_columns = ['date_analysis', 'date_start', 'date_stop', 'dollar_start', 'int_days_range', 
+        list_sql_insert_columns = ['date_analysis', 'date_start', 'date_stop', 'dollar_start', 'int_days_range',
             'int_days_in_market', 'int_days_good', 'int_days_bad', 'string_in_market', 'float_ann_fee',
             'dollar_gm_with_fee', 'dollar_man_fee', 'dollar_buy_hold', 'dollar_gm_no_fee', 'string_symbol']
         list_sql_insert_values = [self.string_date_stop, string_date_first, string_date_last, self.float_money,
             int_days_in_range, int_days_in_market, int_days_good, int_days_bad, string_market_status, 
             self.float_annual_fee, float_gm_with_fee, float_man_fee, float_buy_hold, float_gm_without_fee, 
-            self. string_symbol_sp500]
-    
+            self. string_sym_sp500]
+
         list_insert_dummy = self.sql_conn.insert(
-            list_sql_table_names[1], 
-            list_sql_insert_columns,
-            list_sql_insert_values)
+            m_string_table =  self.string_table,
+            m_list_columns = list_sql_insert_columns,
+            m_list_values = list_sql_insert_values)
 
         #--------------------------------------------------------------------------------#
         # variable / object cleanup
@@ -2024,7 +2022,7 @@ class Sp500Analysis(Sp500Base):
         # return value
         #--------------------------------------------------------------------------------#
 
-        pass
+        return
 
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
