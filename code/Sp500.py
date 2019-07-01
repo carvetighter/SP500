@@ -741,8 +741,6 @@ class Sp500Data(Sp500Base):
         # variables declarations
         #--------------------------------------------------------------------------------#
 
-        string_getting_yahoo_data = 'getting data from stooq from {0} to {1}'
-
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #
@@ -1016,8 +1014,7 @@ class Sp500Data(Sp500Base):
 
         string_gd = string_get_data.format(
                 self.dt_sp500_start.strftime('%d %b %Y'),
-                '1975-12-31'
-                # self.dt_sp500_stop.strftime('%d %b %Y')
+                self.dt_sp500_stop.strftime('%d %b %Y')
             )
         if self.bool_verbose:
             print(string_gd)
@@ -1031,8 +1028,7 @@ class Sp500Data(Sp500Base):
                 self.df_raw_stooq = data.get_data_stooq(
                     symbols = self.string_sym_sp500,
                     start = self.dt_sp500_start.strftime('%Y-%m-%d'),
-                    end = '1975-12-31'
-                    # end = self.dt_sp500_stop.strftime('%Y-%m-%d')
+                    end = self.dt_sp500_stop.strftime('%Y-%m-%d')
                 )
             except Exception as e:
                 string_error_00 = string_error_data_00.format(
@@ -1305,6 +1301,7 @@ class Sp500Data(Sp500Base):
             self.df_metrics = self.df_metrics.assign(float_delta_hl = df_calc['float_delta_hl'])
             self.df_metrics = self.df_metrics.assign(float_delta_div_hl = df_calc['float_delta_div_hl'])
             self.df_metrics = self.df_metrics[self.list_columns[1:]]
+            del df_calc
         else:
             string_error_calc_00 = 'either the raw data from sp500 or database data is not present'
             list_errors.append(string_error_calc_00)
@@ -1374,7 +1371,7 @@ class Sp500Data(Sp500Base):
         bool_return = False
         string_trigger_rule_01 = '50 sma < 200 sma'
         string_trigger_rule_02 = r'50 sma / 200 sma within 5% of max low'
-        bool_df_metrics = bool(isinstance(self.df_metrics, pandas.DataFrame))
+        bool_df_metrics = isinstance(self.df_metrics, pandas.DataFrame)
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -1544,6 +1541,13 @@ class Sp500Data(Sp500Base):
         #
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # add date_date column to DataFrame
+        #--------------------------------------------------------------------------------#
+
+        if not self.bool_initial_load:
+            self.df_metrics = self.df_metrics[200:]
 
         #--------------------------------------------------------------------------------#
         # add date_date column to DataFrame
