@@ -671,7 +671,8 @@ class Sp500Data(Sp500Base):
         # call parent constructor
         #--------------------------------------------------------------------------#
 
-        Sp500Base(
+        Sp500Base.__init__(
+            self,
             c_list_sql_up = csd_list_sql_up,
             c_bool_verbose = csd_bool_verbose)
         
@@ -737,7 +738,7 @@ class Sp500Data(Sp500Base):
         # variables declarations
         #--------------------------------------------------------------------------------#
 
-        string_getting_yahoo_data = 'getting data from yahoo finance from {0} to {1}'
+        string_getting_yahoo_data = 'getting data from stooq from {0} to {1}'
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -811,7 +812,7 @@ class Sp500Data(Sp500Base):
         else:
             string_error_calc = 'error in caclulating metrics for market assessment'
             list_errors.append(string_error_calc)
-            tup_calc = (False, string_error_calc)
+            tup_inout = (False, string_error_calc)
             if self.bool_verbose:
                 print(string_error_calc)
 
@@ -1025,7 +1026,7 @@ class Sp500Data(Sp500Base):
 
         while self.bool_query_stooq_data:
             try:
-                df_raw_stooq = data.get_data_stooq(
+                self.df_raw_stooq = data.get_data_stooq(
                     symbols = self.string_sym_sp500,
                     start = self.dt_sp500_start.strftime('%Y-%m-%d'),
                     end = self.dt_sp500_stop.strftime('%Y-%m-%d'))
@@ -1037,8 +1038,8 @@ class Sp500Data(Sp500Base):
                 int_query_count += 1
             else:
                 self.bool_query_stooq_data = False
-                bool_array = df_raw_stooq.index >= self.dt_sp500_start
-                df_raw_stooq = df_raw_stooq[bool_array]
+                bool_array = self.df_raw_stooq.index >= self.dt_sp500_start
+                self.df_raw_stooq = self.df_raw_stooq[bool_array]
             finally:
                 if int_query_count > 50:
                     self.bool_query_stooq_data = False
@@ -1317,6 +1318,8 @@ class Sp500Data(Sp500Base):
             list_errors.append(string_error_calc_00)
             if self.bool_verbose:
                 print(string_error_calc_00)
+                print('successful 200 records from locad db:', bool_db_data)
+                print('sucessful raw data from stooq:', bool_raw_data)
 
         #--------------------------------------------------------------------------------#
         # variable / object cleanup
@@ -1452,7 +1455,12 @@ class Sp500Data(Sp500Base):
                 # update dataframe
                 #--------------------------------------------------------------------------------#
 
-                self.df_metrics['string_in_market'].iloc[int_index] = bool_in_market
+                if bool_in_market:
+                    string_in_market = 'True'
+                else:
+                    string_in_market = 'False'
+
+                self.df_metrics['string_in_market'].iloc[int_index] = string_in_market
                 self.df_metrics['float_delta_hl'].iloc[int_index] = float_delta_high_low
                 self.df_metrics['float_delta_div_hl'].iloc[int_index] = float_delta / float_delta_high_low
 
@@ -1625,7 +1633,8 @@ class Sp500Analysis(Sp500Base):
         # call parent constructor
         #--------------------------------------------------------------------------#
 
-        Sp500Base(
+        Sp500Base.__init__(
+            self,
             c_list_sql_up = ca_list_sql_up,
             c_bool_verbose = ca_bool_verbose)
 
