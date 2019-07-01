@@ -105,6 +105,9 @@ class Sp500Base(object):
             self.string_sql_server,
             c_list_sql_up[1],
             self.string_sql_db])
+        self.string_sym_sp500 = '^SPX'
+        self.dt_sp500_start = datetime(1970, 1, 1)
+        self.dt_sp500_stop = datetime.now()
 
         #--------------------------------------------------------------------------#
         # sql db data attributes
@@ -676,9 +679,6 @@ class Sp500Data(Sp500Base):
         # get data attributes
         #--------------------------------------------------------------------------#
         
-        self.dt_sp500_start = datetime(1970, 1, 1)
-        self.dt_sp500_stop = datetime.now()
-        self.string_sym_sp500 = '^SPX'
         self.bool_query_stooq_data = True
         
         #--------------------------------------------------------------------------#
@@ -1628,7 +1628,7 @@ class Sp500Analysis(Sp500Base):
         Sp500Base.__init__(
             c_list_sql_up = ca_list_sql_up,
             c_bool_verbose = ca_bool_verbose)
-        
+
         #--------------------------------------------------------------------------#
         # data containers
         #--------------------------------------------------------------------------#
@@ -1646,6 +1646,7 @@ class Sp500Analysis(Sp500Base):
         self.string_date_format = '%Y-%m-%d'
         self.string_date_start = self.datetime_start.strftime(self.string_date_format)
         self.string_date_stop = self.datetime_stop.strftime(self.string_date_format)
+        self.string_table = self.dict.get('analysis', dict()).get('table_name', '')
 
     #--------------------------------------------------------------------------#
     # callable methods
@@ -1939,9 +1940,9 @@ class Sp500Analysis(Sp500Base):
             # calculate good days
             int_days_good = int_days_in_market - int_days_bad
     
-            #------------------------------------------------------------------------------------------------------------------------------------------------------#
+            #--------------------------------------------------------------------------------#
             # conduct amount calculations
-            #------------------------------------------------------------------------------------------------------------------------------------------------------#
+            #--------------------------------------------------------------------------------#
     
             print('conducting amount calculations')
             # calculate dollar amounts
@@ -1996,13 +1997,24 @@ class Sp500Analysis(Sp500Base):
     
             # buy a hold calculation
             float_buy_hold = self.float_money * (float_close_final / float_close_initial)
-        
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # sectional comment
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # insert results into database
+        #--------------------------------------------------------------------------------#
+    
+        print('inserting results of analysis into database')
+        list_sql_insert_columns = ['date_analysis', 'date_start', 'date_stop', 'dollar_start', 'int_days_range', 
+            'int_days_in_market', 'int_days_good', 'int_days_bad', 'string_in_market', 'float_ann_fee',
+            'dollar_gm_with_fee', 'dollar_man_fee', 'dollar_buy_hold', 'dollar_gm_no_fee', 'string_symbol']
+        list_sql_insert_values = [self.string_date_stop, string_date_first, string_date_last, self.float_money,
+            int_days_in_range, int_days_in_market, int_days_good, int_days_bad, string_market_status, 
+            self.float_annual_fee, float_gm_with_fee, float_man_fee, float_buy_hold, float_gm_without_fee, 
+            self. string_symbol_sp500]
+    
+        list_insert_dummy = self.sql_conn.insert(
+            list_sql_table_names[1], 
+            list_sql_insert_columns,
+            list_sql_insert_values)
 
         #--------------------------------------------------------------------------------#
         # variable / object cleanup
