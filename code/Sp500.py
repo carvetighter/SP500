@@ -1575,106 +1575,6 @@ class Sp500Data(Sp500Base):
 
         return tuple(list_insert_results)
 
-    def def_Methods(self, list_cluster_results, array_sparse_matrix):
-        '''
-        below is an example of a good method comment
-
-        ---------------------------------------------------------------------------------------------------------------------------------------------------
-
-        this method implements the evauluation criterea for the clusters of each clutering algorithms
-        criterea:
-               - 1/2 of the clusters for each result need to be:
-                   - the average silhouette score of the cluster needs to be higher then the silhouette score of all the clusters
-                     combined
-                   - the standard deviation of the clusters need to be lower than the standard deviation of all the clusters
-                     combined
-               - silhouette value for the dataset must be greater than 0.5
-
-        Requirements:
-        package time
-        package numpy
-        package statistics
-        package sklearn.metrics
-
-        Inputs:
-        list_cluster_results
-        Type: list
-        Desc: the list of parameters for the clustering object
-        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
-                         or dense array
-        list[x][1] -> type: string; the cluster ID with the parameters
-
-        array_sparse_matrix
-        Type: numpy array
-        Desc: a sparse matrix of the samples used for clustering
-
-        Important Info:
-        None
-
-        Return:
-        object
-        Type: list
-        Desc: this of the clusters that meet the evaluation criterea
-        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
-                        or dense array
-        list[x][1] -> type: string; the cluster ID with the parameters
-        list[x][2] -> type: float; silhouette average value for the entire set of data
-        list[x][3] -> type: array; 1 dimensional array of silhouette values for each data sample
-        list[x][4] -> type: list; list of lists, the cluster and the average silhoutte value for each cluster, the orders is sorted 
-                            highest to lowest silhoutte value
-                            list[x][4][x][0] -> int; cluster label
-                            list[x][4][x][1] -> float; cluster silhoutte value
-        list[x][5] -> type: list; a list that contains the cluster label and the number of samples in each cluster
-                           list[x][5][x][0] -> int; cluster label
-                           list[x][5][x][1] -> int; number of samples in cluster list[x][5][x][0]
-        '''
-
-        #--------------------------------------------------------------------------------#
-        # objects declarations
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # time declarations
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # lists declarations
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # variables declarations
-        #--------------------------------------------------------------------------------#
-
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # Start
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-
-        #--------------------------------------------------------------------------------#
-        # sub-section comment
-        #--------------------------------------------------------------------------------#
-
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # sectional comment
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-
-        #--------------------------------------------------------------------------------#
-        # variable / object cleanup
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # return value
-        #--------------------------------------------------------------------------------#
-
-        pass
-
 class Sp500Analysis(Sp500Base):
     '''
     This class connects to an external data source and pulls the sp500 data,
@@ -1976,10 +1876,127 @@ class Sp500Analysis(Sp500Base):
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
         #--------------------------------------------------------------------------------#
-        # sub-section comment
+        # start test
         #--------------------------------------------------------------------------------#
 
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        print('begin calculations')
+        if not self.df_analysis.empty:
+            #--------------------------------------------------------------------------------#
+            # day counts
+            #--------------------------------------------------------------------------------#
+            print('conducting days calculations')
+            # days pulled from database
+            string_date_first = self.df_analysis['date_date'].ix[0]
+            string_date_last = self.df_analysis['date_date'].ix[self.df_analysis.shape[0] - 1]
+    
+            # days in range
+            int_days_in_range = self.df_analysis.shape[0]
+    
+            # market status
+            string_market_status = self.df_analysis['string_in_market'].ix[self.df_analysis.shape[0] - 1]
+    
+            # days in the market
+            array_in_market = self.df_analysis['string_in_market'] == 'True'
+            dataframe_in_market = self.df_analysis.ix[array_in_market]
+            int_days_in_market = dataframe_in_market.shape[0]
+    
+            # bad days
+            array_trigger = self.df_analysis['string_trigger'] != 'None'
+            dataframe_trigger = self.df_analysis.ix[array_trigger]
+            
+            # replace index to interate
+            list_index_new = list()
+            for int_index in range(0, len(dataframe_trigger.index)):
+                list_index_new.append(int_index)
+            dataframe_trigger.index = list_index_new
+            
+            int_days_bad = 0
+            for int_index in range(0, dataframe_trigger.shape[0] - 1):
+                # get the start market status
+                if int_index == 0:
+                    string_status_start = self.df_analysis['string_in_market'].ix[0]
+                else:
+                    string_status_start = dataframe_trigger['string_in_market'].ix[int_index]
+                
+                # get the end market satus
+                string_status_end = dataframe_trigger['string_in_market'].ix[int_index + 1]
+                
+                # calculate based on the a change of market status or not
+                if string_status_start == 'True' and string_status_end == 'False':
+                    # get sp500 values
+                    float_sp500_start = dataframe_trigger['float_close'].ix[int_index]
+                    float_sp500_end = dataframe_trigger['float_close'].ix[int_index + 1]
+    
+                    # get bad days
+                    if float_sp500_end < float_sp500_start:
+                        string_date_bad_start = dataframe_trigger['date_date'].ix[int_index]
+                        string_date_bad_end = dataframe_trigger['date_date'].ix[int_index + 1]
+                        datetime_bad_start = datetime.strptime(string_date_bad_start, '%Y-%m-%d')
+                        datetime_bad_end = datetime.strptime(string_date_bad_end, '%Y-%m-%d')
+                        timedelta_bad = datetime_bad_end - datetime_bad_start
+                        int_days_bad = int_days_bad + timedelta_bad.days
+    
+            # calculate good days
+            int_days_good = int_days_in_market - int_days_bad
+    
+            #------------------------------------------------------------------------------------------------------------------------------------------------------#
+            # conduct amount calculations
+            #------------------------------------------------------------------------------------------------------------------------------------------------------#
+    
+            print('conducting amount calculations')
+            # calculate dollar amounts
+            float_man_fee = 0
+            float_gm_with_fee = self.float_money
+            float_gm_without_fee = self.float_money
+            for int_index in range(1, self.df_analysis.shape[0]):
+                # get dates
+                string_date_calc_start = self.df_analysis['date_date'].ix[int_index - 1]
+                string_date_calc_stop = self.df_analysis['date_date'].ix[int_index]
+                datetime_calc_start = datetime.strptime(string_date_calc_start, '%Y-%m-%d')
+                datetime_calc_stop = datetime.strptime(string_date_calc_stop, '%Y-%m-%d')
+    
+                # get closes
+                float_close_calc_start = self.df_analysis['float_close'].ix[int_index - 1]
+                float_close_calc_stop = self.df_analysis['float_close'].ix[int_index]
+                float_ratio_return = float_close_calc_stop / float_close_calc_start
+                if int_index == 1:
+                    float_close_initial = float_close_calc_start
+                if int_index == self.df_analysis.shape[0] - 1:
+                    float_close_final = float_close_calc_stop
+    
+                # get market status
+                string_ms_start = self.df_analysis['string_in_market'].ix[int_index - 1]
+                string_ms_stop = self.df_analysis['string_in_market'].ix[int_index]
+    
+                # calc amounts
+                if string_ms_start == 'True' and string_ms_stop == 'True':
+                    float_gm_with_fee = float_gm_with_fee * float_ratio_return
+                    float_gm_without_fee = float_gm_without_fee * float_ratio_return
+    
+                # calc fee
+                # get start datetime
+                if int_index == 1:
+                    datetime_quarter_start = datetime_calc_start
+    
+                # account for new year
+                if datetime_quarter_start.year != datetime_calc_stop.year:
+                    datetime_quarter_start = datetime_calc_stop
+    
+                # calc diff in dates
+                timedelta_fee = datetime_calc_stop - datetime_quarter_start
+    
+                # test for quarter
+                if timedelta_fee.days == 90:
+                    # reset new quarter date
+                    datetime_quarter_start = datetime_calc_stop + timedelta(days = 1)
+    
+                    # calculate management fee and reduce balance
+                    float_man_fee = float_man_fee + (float_gm_with_fee * float_annual_fee / 4)
+                    float_gm_with_fee = float_gm_with_fee * (1 - (float_annual_fee / 4))
+    
+            # buy a hold calculation
+            float_buy_hold = self.float_money * (float_close_final / float_close_initial)
+        
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #
         # sectional comment
@@ -1996,7 +2013,6 @@ class Sp500Analysis(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         pass
-
 
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
