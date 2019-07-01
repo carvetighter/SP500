@@ -671,7 +671,7 @@ class Sp500Data(Sp500Base):
         # call parent constructor
         #--------------------------------------------------------------------------#
 
-        Sp500Base.__init__(
+        Sp500Base(
             c_list_sql_up = csd_list_sql_up,
             c_bool_verbose = csd_bool_verbose)
         
@@ -1625,7 +1625,7 @@ class Sp500Analysis(Sp500Base):
         # call parent constructor
         #--------------------------------------------------------------------------#
 
-        Sp500Base.__init__(
+        Sp500Base(
             c_list_sql_up = ca_list_sql_up,
             c_bool_verbose = ca_bool_verbose)
 
