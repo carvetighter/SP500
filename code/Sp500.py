@@ -1291,7 +1291,7 @@ class Sp500Data(Sp500Base):
                     df_calc['float_close'].iloc[int_index] - df_calc['float_close'].iloc[int_index - 1])
                 if int_index >= 2:
                     list_acceleration.append(
-                        df_calc['float_close'].iloc[int_index] - df_calc['float_close'].iloc[int_index - 1])
+                        list_velocity[int_index] - list_velocity[int_index - 1])
             series_velocity = pandas.Series(data = list_velocity)
             series_acceleration = pandas.Series(data = list_acceleration)
 
@@ -1412,7 +1412,7 @@ class Sp500Data(Sp500Base):
             # calculate in out of the market
             #--------------------------------------------------------------------------------#
 
-            for int_index in range(int_index_start, self.df_metrics.shape[0]):
+            for int_index in range(int_index_start, len(self.df_metrics)):
                 #--------------------------------------------------------------------------------#
                 # get metrics
                 #--------------------------------------------------------------------------------#
@@ -1925,9 +1925,6 @@ class Sp500Analysis(Sp500Base):
             int_days_bad = 0
             for int_index in range(0, len(dataframe_trigger) - 1):
                 # get the start market status
-                # if int_index == 0:
-                #     string_status_start = self.df_analysis['string_in_market'].iloc[0]
-                # else:
                 string_status_start = dataframe_trigger['string_in_market'].iloc[int_index]
                 
                 # get the end market satus
