@@ -1016,7 +1016,9 @@ class Sp500Data(Sp500Base):
 
         string_gd = string_get_data.format(
                 self.dt_sp500_start.strftime('%d %b %Y'),
-                self.dt_sp500_stop.strftime('%d %b %Y'))
+                '1975-12-31'
+                # self.dt_sp500_stop.strftime('%d %b %Y')
+            )
         if self.bool_verbose:
             print(string_gd)
 
@@ -1029,7 +1031,9 @@ class Sp500Data(Sp500Base):
                 self.df_raw_stooq = data.get_data_stooq(
                     symbols = self.string_sym_sp500,
                     start = self.dt_sp500_start.strftime('%Y-%m-%d'),
-                    end = self.dt_sp500_stop.strftime('%Y-%m-%d'))
+                    end = '1975-12-31'
+                    # end = self.dt_sp500_stop.strftime('%Y-%m-%d')
+                )
             except Exception as e:
                 string_error_00 = string_error_data_00.format(
                     int_query_count, str(e.args[0]))
@@ -1250,21 +1254,23 @@ class Sp500Data(Sp500Base):
             df_sp500.index = self.df_raw_stooq.index
             df_calc = pandas.concat([self.df_200_data, df_sp500], axis = 0)
             del df_sp500
+            df_calc = df_calc.sort_index(axis = 0, ascending = True)
 
             #--------------------------------------------------------------------------------#
             # 50 and 200 sma
             #--------------------------------------------------------------------------------#
 
             rolling_50 = df_calc['float_close'].rolling(window = 50)
-            rolling_50_sma = rolling_50.mean()
+            series_rolling_50_sma = rolling_50.mean()
             rolling_200 = df_calc['float_close'].rolling(window = 200)
-            rolling_200_sma = rolling_200.mean()
+            series_rolling_200_sma = rolling_200.mean()
+            del rolling_50, rolling_200
 
             #--------------------------------------------------------------------------------#
             # 50 - 200 sma
             #--------------------------------------------------------------------------------#
 
-            series_delta_50_200 = rolling_50_sma - rolling_200_sma
+            series_delta_50_200 = series_rolling_50_sma - series_rolling_200_sma
 
             #--------------------------------------------------------------------------------#
             # velocity and acceleration
@@ -1278,28 +1284,9 @@ class Sp500Data(Sp500Base):
                 if int_index >= 2:
                     list_acceleration.append(
                         list_velocity[int_index] - list_velocity[int_index - 1])
-            series_velocity = pandas.Series(data = list_velocity)
-            series_acceleration = pandas.Series(data = list_acceleration)
+            series_velocity = pandas.Series(data = list_velocity, index = df_calc.index)
+            series_acceleration = pandas.Series(data = list_acceleration, index = df_calc.index)
             del list_velocity, list_acceleration
-
-            #--------------------------------------------------------------------------------#
-            # fix string_in_market
-            #--------------------------------------------------------------------------------#
-
-            # if there is a zero
-            array_bool_sim_00 = df_calc['string_in_market'] == 0
-            array_bool_sim_01 = df_calc['string_in_market'] == '0'
-            array_bool_sim_02 = array_bool_sim_00 | array_bool_sim_01
-
-            # if there is a 1
-            array_bool_sim_03 = df_calc['string_in_market'] == 1
-            array_bool_sim_04 = df_calc['string_in_market'] == '1'
-            array_bool_sim_05 = array_bool_sim_03 | array_bool_sim_04
-
-            df_calc['string_in_market'][array_bool_sim_02] = 'False'
-            df_calc['string_in_market'][array_bool_sim_05] = 'True'
-            del array_bool_sim_00, array_bool_sim_01, array_bool_sim_02
-            del array_bool_sim_03, array_bool_sim_04, array_bool_sim_05
 
             #--------------------------------------------------------------------------------#
             # combine into dataframe
@@ -1308,8 +1295,8 @@ class Sp500Data(Sp500Base):
             bool_return = True
             self.df_metrics = pandas.DataFrame(index = df_calc.index)
             self.df_metrics = self.df_metrics.assign(float_close = df_calc['float_close'])
-            self.df_metrics = self.df_metrics.assign(float_50_sma = rolling_50_sma)
-            self.df_metrics = self.df_metrics.assign(float_200_sma = rolling_200_sma)
+            self.df_metrics = self.df_metrics.assign(float_50_sma = series_rolling_50_sma)
+            self.df_metrics = self.df_metrics.assign(float_200_sma = series_rolling_200_sma)
             self.df_metrics = self.df_metrics.assign(float_delta_50_200 = series_delta_50_200)
             self.df_metrics = self.df_metrics.assign(float_velocity = series_velocity)
             self.df_metrics = self.df_metrics.assign(float_accel = series_acceleration)
@@ -1406,7 +1393,7 @@ class Sp500Data(Sp500Base):
                 bool_in_market = True
                 float_delta_high_low = self.df_metrics['float_delta_50_200'].iloc[199]
                 self.df_metrics['float_delta_hl'].iloc[199] = float_delta_high_low
-                self.df_metrics['string_in_market'].iloc[199] = True
+                self.df_metrics['string_in_market'].iloc[199] = 'True'
                 int_index_start = 200
             else:
                 bool_in_market = bool(self.df_metrics['string_in_market'].iloc[0])
@@ -1480,7 +1467,7 @@ class Sp500Data(Sp500Base):
                 'None')
             self.df_metrics['string_in_market'] = self._nan_to_unknown(
                 self.df_metrics['string_in_market'],
-                False)
+                'False')
             for string_series_name in list_float_series:
                 self.df_metrics[string_series_name] = self._nan_to_unknown(
                     self.df_metrics[string_series_name],
