@@ -115,7 +115,7 @@ def main_class_test(m_list_user):
     tup_anal_db_check = sp_analysis.check_sql_db()
     if tup_anal_db_check[0]:
         print('\n' + string_analyze_data)
-        # sp_analysis.analysis_wrapper()
+        sp_analysis.analysis_wrapper()
     else:
         list_errors.append(sp_analysis.error_sql_db())
 
@@ -125,7 +125,7 @@ def main_class_test(m_list_user):
     # create visualization
     #--------------------------------------------------------------------------------#
 
-    print('\n' + string_plotting_data)
+    # print('\n' + string_plotting_data)
 
     #CreateVisualization(datetime_start, datetime_stop, m_list_user)
 
