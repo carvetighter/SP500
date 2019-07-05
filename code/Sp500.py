@@ -209,7 +209,7 @@ class Sp500Base(object):
 
         if self.bool_verbose:
             print(string_check_setup)
-        tup_db_check = self._check_sql_db_setup()
+        bool_db_check = self._check_sql_db_setup()
         if tup_db_check[0]:
             if self.bool_verbose:
                 print(string_sql_good_setup)
@@ -306,15 +306,9 @@ class Sp500Base(object):
         None
 
         Return:
-        object
-        Type: tuple
-        Desc: if the database is structured for the analysis and any errors that
-            are detected; if tuple[0] is True the tables exists and the columns names are
-            the same as the dictionary
-        tuple[0] -> type: boolean; True of db is setup for the analysis, False if not
-        tuple[1] -> type: string; if tuple[0] is True then empty string; if tuple[0] is
-            False than any errors that are detected; errors are separated by double
-            pipes '||'
+        variable
+        Type: boolean
+        Desc: method executes as designed
         '''
 
         #--------------------------------------------------------------------------------#
@@ -374,18 +368,18 @@ class Sp500Base(object):
                             bool_table_check = True
                         else:
                             string_error_db_check_02 = 'table {0} columns do not match'
-                            list_errors.append(string_error_db_check_02.format(string_table))
+                            self.list_errors.append(string_error_db_check_02.format(string_table))
                     else:
                         string_error_db_check_00 = 'table {0} error retrieving columns'
-                        list_errors.append(string_error_db_check_00.format(string_table))
+                        self.list_errors.append(string_error_db_check_00.format(string_table))
                 else:
                     string_error_db_check_01 = 'table {0} does not exist'
-                    list_errors.append(string_error_db_check_01.format(string_table))
+                    self.list_errors.append(string_error_db_check_01.format(string_table))
 
                 # add boolean to set for check
                 set_bool_return.add(bool_table_check)
         else:
-            list_errors.append('no connection to sql database')
+            self.list_errors.append('no connection to sql database')
             bool_return = False
 
         #--------------------------------------------------------------------------------#
@@ -399,9 +393,9 @@ class Sp500Base(object):
         # return value
         #--------------------------------------------------------------------------------#
 
-        return bool_return, '||'.join(list_errors)
+        return bool_return
 
-    def _create_sql_db_tables(self, m_string_sql_db_errors):
+    def _create_sql_db_tables(self):
         '''
         this method creates the sql database tables based on the error string passed
 
@@ -409,21 +403,17 @@ class Sp500Base(object):
         package SqlMethods
 
         Inputs:
-        m_string_sql_db_errors
-        Type: string
-        Desc: error string, each error is seperated by string double pipe, '||'
+        none
+        Type: n/a
+        Desc: n/a
 
         Important Info:
         None
 
         Return:
-        object
-        Type: tuple
-        Desc: 
-        tuple[0] -> type: boolean; True of db is setup for the analysis, False if not
-        tuple[1] -> type: string; if tuple[0] is True then empty string; if tuple[0] is
-            False than any errors that are detected; errors are separated by double
-            pipes '||';
+        variable
+        Type: boolean
+        Desc: method executes as designed
         '''
 
         #--------------------------------------------------------------------------------#
@@ -437,8 +427,6 @@ class Sp500Base(object):
         #--------------------------------------------------------------------------------#
         # iterator declarations
         #--------------------------------------------------------------------------------#
-
-        list_errors = m_string_sql_db_errors.split('||')
 
         #--------------------------------------------------------------------------------#
         # variables declarations
@@ -461,7 +449,7 @@ class Sp500Base(object):
         # test for connection and begin looping through tables
         #--------------------------------------------------------------------------------#
 
-        series_db_errors = pandas.Series(data = list_errors)
+        series_db_errors = pandas.Series(data = self.list_errors)
         series_tables = series_db_errors.apply(
             lambda x: x.split(' ')[1])
         set_tables = set(series_tables.values)
@@ -532,7 +520,7 @@ class Sp500Base(object):
                     list_errors.append(list_create_table[1])
                 else:
                     string_error_crete_table_00 = 'table {0} not in table dictionary'
-                    list_errors.append(string_error_crete_table_00.format(string_table))
+                    self.list_errors.append(string_error_crete_table_00.format(string_table))
 
                 #--------------------------------------------------------------------------------#
                 # create return set to test return boolean
@@ -540,7 +528,7 @@ class Sp500Base(object):
 
                 set_bool_return.add(bool_table)
         else:
-            list_errors.append('no connection to sql database')
+            self.list_errors.append('no connection to sql database')
             set_bool_return.add(bool_table)
 
         #--------------------------------------------------------------------------------#
@@ -554,7 +542,7 @@ class Sp500Base(object):
         # return value
         #--------------------------------------------------------------------------------#
 
-        return bool_return, '||'.join(list_errors)
+        return bool_return
 
     def _nan_to_unknown(self, m_pandas_series, m_replacement = '', bool_string = False):
         '''
@@ -609,11 +597,11 @@ class Sp500Base(object):
         # replacing na / nan values with space
         #--------------------------------------------------------------------------#
 
-        if m_pandas_series.hasnans == True and bool_string == False:
+        if m_pandas_series.hasnans is True and bool_string is False:
             series_nan = m_pandas_series.isnull()
             m_pandas_series.loc[series_nan.values] = m_replacement
 
-        if bool_string == True:
+        if bool_string is True:
             m_pandas_series.loc[m_pandas_series == 'nan'] = m_replacement
 
         #--------------------------------------------------------------------------#
