@@ -1586,12 +1586,9 @@ class Sp500Analysis(Sp500Base):
         None
 
         Return:
-        object
-        Type: tuple
-        Desc: length = 2; 
-        tuple[0] -> type: boolean; if wrapper method is successful
-        tuple[1] -> type: string; if tuple[0] == True empty string; else
-            string with errors
+        variable
+        Type: boolean
+        Desc: method executes as designed
         '''
 
         #--------------------------------------------------------------------------------#
@@ -1605,8 +1602,6 @@ class Sp500Analysis(Sp500Base):
         #--------------------------------------------------------------------------------#
         # lists declarations
         #--------------------------------------------------------------------------------#
-
-        list_errors = list()
 
         #--------------------------------------------------------------------------------#
         # variables declarations
@@ -1624,24 +1619,23 @@ class Sp500Analysis(Sp500Base):
         # get data from database
         #--------------------------------------------------------------------------------#
 
-        tup_db_data = self._get_data_from_db()
+        bool_db_data = self._get_data_from_db()
 
         #--------------------------------------------------------------------------------#
         # conduct analysis of data
         #--------------------------------------------------------------------------------#
 
-        if tup_db_data[0]:
-            tup_analysis = self._analysis()
+        if bool_db_data:
+            bool_analysis = self._analysis()
         else:
-            list_db_errors = tup_db_data[1].split('||')
-            list_errors.extend(list_db_errors)
-            tup_analysis = (False, '')
+            self.list_errors.append('analysis:error in getting data from database')
+            bool_analysis = False
 
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
 
-        return tup_analysis
+        return bool_analysis
 
     #--------------------------------------------------------------------------#
     # supportive methods
@@ -1664,14 +1658,9 @@ class Sp500Analysis(Sp500Base):
         None
 
         Return:
-        object
-        Type: tuple
-        Desc: length = 2
-        tuple[0] -> type: boolean; True if method executes as desgned
-            and data is in dataframe for analysis
-        tuple[1] -> type: list or empty string
-            if tuple[0] == True; pandas.DataFrame
-            if tuple[0] == False; string of errors seperated by '||'
+        variable
+        Type: boolean
+        Desc: method executes as designed
         '''
 
         #--------------------------------------------------------------------------------#
@@ -1685,8 +1674,6 @@ class Sp500Analysis(Sp500Base):
         #--------------------------------------------------------------------------------#
         # lists declarations
         #--------------------------------------------------------------------------------#
-
-        list_errors = list()
 
         #--------------------------------------------------------------------------------#
         # variables declarations
@@ -1723,29 +1710,20 @@ class Sp500Analysis(Sp500Base):
                     sql = string_sql_query,
                     con = self.sql_conn._list_conn[1])
             except Exception as e:
-                list_errors.append('pandas.read_sql() error: ' + str(e.args))
+                self.list_errors.append('pandas.read_sql() error: ' + str(e.args))
             else:
                 if isinstance(self.df_analysis, pandas.DataFrame) and \
                   not self.df_analysis.empty:
                     bool_return = True
                 else:
-                    list_errors.append(
+                    self.list_errors.append(
                         'data from database is not in a dataframe or dataframe is empty')
             finally:
                 pass
         else:
-            list_errors.append('not connected to sql database')
+            self.list_errors.append('not connected to sql database')
 
-        #--------------------------------------------------------------------------------#
-        # return value
-        #--------------------------------------------------------------------------------#
-
-        if bool_return:
-            tup_return = (bool_return, self.df_analysis)
-        else:
-            tup_return = (bool_return, '||'.join(list_errors))
-
-        return tup_return
+        return bool_return
 
     def _analysis(self):
         '''
@@ -1763,9 +1741,9 @@ class Sp500Analysis(Sp500Base):
         None
 
         Return:
-        object
-        Type: tuple
-        Desc: ??
+        variable
+        Type: boolean
+        Desc: method executes as designed
         '''
 
         #--------------------------------------------------------------------------------#
@@ -1779,8 +1757,6 @@ class Sp500Analysis(Sp500Base):
         #--------------------------------------------------------------------------------#
         # lists declarations
         #--------------------------------------------------------------------------------#
-
-        list_errors = list()
 
         #--------------------------------------------------------------------------------#
         # variables declarations
@@ -1931,11 +1907,11 @@ class Sp500Analysis(Sp500Base):
                 m_list_columns = list_sql_insert_columns,
                 m_list_values = list_sql_insert_values)
             
-            if list_insert_dummy[0] == False:
-                list_errors.append('insert of analysis data failed into local database')
+            if list_insert_dummy[0] is False:
+                self.list_errors.append('insert of analysis data failed into local database')
                 bool_return = False
         else:
-            list_errors.append('analysis dataframe is empty')
+            self.list_errors.append('analysis dataframe is empty')
             bool_return = False
 
         #--------------------------------------------------------------------------------#
@@ -1946,12 +1922,7 @@ class Sp500Analysis(Sp500Base):
         # return value
         #--------------------------------------------------------------------------------#
 
-        if bool_return:
-            tup_return = (bool_return, '')
-        else:
-            tup_return = (bool_return, '||'.join(list_errors))
-
-        return tup_return
+        return bool_return
 
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''

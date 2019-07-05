@@ -103,15 +103,13 @@ def main_class_test(m_list_user):
     #--------------------------------------------------------------------------------#
 
     print('\n' + string_check_sql_db)
-    tup_db_check = sp_data.check_sql_db()
-    if tup_db_check[0]:
+    bool_db_check = sp_data.check_sql_db()
+    if bool_db_check:
         print(string_get_sp500_data)
-        tup_data_results = sp_data.data_wrapper()
+        bool_data_results = sp_data.data_wrapper()
     else:
-        list_errors.append(sp_data.error_sql_db())
-        tup_data_results(False, '')
-    
-    if not tup_data_results[0]:
+        list_errors.extend(sp_data.list_errors)
+        bool_data_results = False
         
 
     #--------------------------------------------------------------------------------#
@@ -119,13 +117,12 @@ def main_class_test(m_list_user):
     #--------------------------------------------------------------------------------#
 
     print('\n' + string_analyze_data)
-    # tup_anal_db_check = sp_analysis.check_sql_db()
-    if tup_db_check[0]:
+    if bool_db_check:
         print('\n' + string_analyze_data)
-        tup_analysis_ = sp_analysis.analysis_wrapper()
+        bool_analysis = sp_analysis.analysis_wrapper()
     else:
-        list_errors.append(sp_analysis.error_sql_db())
-        tup_analysis_ = (False, '||'.join(list_errors))
+        list_errors.extend(sp_analysis.list_errors)
+        bool_analysis = False
 
     #--------------------------------------------------------------------------------#
     # create visualization
