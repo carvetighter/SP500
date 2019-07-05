@@ -736,8 +736,6 @@ class Sp500Data(Sp500Base):
         # lists declarations
         #--------------------------------------------------------------------------------#
 
-        list_errors = list()
-
         #--------------------------------------------------------------------------------#
         # variables declarations
         #--------------------------------------------------------------------------------#
@@ -756,20 +754,20 @@ class Sp500Data(Sp500Base):
 
         if self.bool_verbose:
             print('getting date to start query for sp500')
-        tup_max_date = self._get_max_date_from_db()
+        bool_max_date = self._get_max_date_from_db()
 
         #--------------------------------------------------------------------------------#
         # get data from yahoo finance
         #--------------------------------------------------------------------------------#
 
-        if tup_max_date[0]:
+        if bool_max_date:
             if self.bool_verbose:
                 print('get sp500 data')
-            tup_sp500 = self._get_sp500_data()
+            bool_sp500 = self._get_sp500_data()
         else:
             string_error_max_date = 'error in calculating the max date to pull data for sp500'
-            list_errors.append(string_error_max_date)
-            tup_sp500 = (False, string_error_max_date)
+            self.list_errors.append(string_error_max_date)
+            bool_sp500 = False,
             if self.bool_verbose:
                 print(string_error_max_date)
 
@@ -777,14 +775,14 @@ class Sp500Data(Sp500Base):
         # get latest 200 records from sp500 database
         #--------------------------------------------------------------------------------#
 
-        if tup_sp500[0]:
+        if bool_sp500:
             if self.bool_verbose:
                 print('getting latest 200 records from database')
-            tup_200 = self._get_200_from_db()
+            bool_200 = self._get_200_from_db()
         else:
             string_error_sp500 = 'error in pulling sp500 data from stooq through pandas_datareader'
-            list_errors.append(string_error_sp500)
-            tup_200 = (False, string_error_sp500)
+            self.list_errors.append(string_error_sp500)
+            bool_200 = False
             if self.bool_verbose:
                 print(string_error_sp500)
 
@@ -792,14 +790,14 @@ class Sp500Data(Sp500Base):
         # caclualte metrics
         #--------------------------------------------------------------------------------#
 
-        if tup_200[0]:
+        if bool_200:
             if self.bool_verbose:
                 print('calculating metrics')
-            tup_calc = self._calc_metrics()
+            bool_calc = self._calc_metrics()
         else:
             string_error_200 = 'error in pulling 200 records from local sql db'
-            list_errors.append(string_error_200)
-            tup_calc = (False, string_error_200)
+            self.list_errors.append(string_error_200)
+            bool_calc = False
             if self.bool_verbose:
                 print(string_error_200)
 
@@ -807,14 +805,14 @@ class Sp500Data(Sp500Base):
         # caclulate in or out of the market
         #--------------------------------------------------------------------------------#
 
-        if tup_calc[0]:
+        if bool_calc:
             if self.bool_verbose:
                 print('calculating in out metrics')
-            tup_inout = self._calc_inout_market()
+            bool_inout = self._calc_inout_market()
         else:
             string_error_calc = 'error in caclulating metrics for market assessment'
-            list_errors.append(string_error_calc)
-            tup_inout = (False, string_error_calc)
+            self.list_errors.append(string_error_calc)
+            bool_inout = False
             if self.bool_verbose:
                 print(string_error_calc)
 
@@ -822,14 +820,14 @@ class Sp500Data(Sp500Base):
         # insert results into sql database
         #--------------------------------------------------------------------------------#
 
-        if tup_inout[0]:
+        if bool_inout:
             if self.bool_verbose:
                 print('inserting results into sql database')
-            tup_insert_results = self._insert_results()
+            bool_insert_results = self._insert_results()
         else:
             string_error_inout = 'error in calculating in and out of market'
-            list_errors.append(string_error_inout)
-            tup_insert_results = (False, string_error_inout)
+            self.list_errors.append(string_error_inout)
+            bool_insert_results = False
             if self.bool_verbose:
                 print(string_error_inout)
 
@@ -837,11 +835,11 @@ class Sp500Data(Sp500Base):
         # show insert results from database
         #--------------------------------------------------------------------------------#
 
-        if tup_insert_results[0]:
+        if bool_insert_results:
             print('successfull insert into sql databse')
         else:
             string_error_sql = 'error in inserting into sql database'
-            list_errors.append(string_error_sql)
+            self.list_errors.append(string_error_sql)
             if self.bool_verbose:
                 print(string_error_sql)
 
@@ -849,7 +847,7 @@ class Sp500Data(Sp500Base):
         # return value
         #--------------------------------------------------------------------------------#
 
-        return tup_insert_results
+        return bool_insert_results
 
     #--------------------------------------------------------------------------#
     # supportive methods
@@ -872,13 +870,9 @@ class Sp500Data(Sp500Base):
         None
 
         Return:
-        object
-        Type: tuple
-        Desc: length = 2; the results of finding the newest / most recent date
-        in the data
-        tuple[0] -> type: boolean; if True
-        tuple[1] -> type: datetime or string; if tuple[0] is True yahoo start date, if False
-            string of errors seperated by '||'
+        variable
+        Type: boolean
+        Desc: if method executed as designed
         '''
 
         #--------------------------------------------------------------------------------#
@@ -892,8 +886,6 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
         # lists declarations
         #--------------------------------------------------------------------------------#
-
-        list_errors = list()
 
         #--------------------------------------------------------------------------------#
         # variables declarations
@@ -930,27 +922,18 @@ class Sp500Data(Sp500Base):
             if isinstance(string_date, str):
                 self.dt_sp500_start = datetime.strptime(string_date, '%Y-%m-%d') + timedelta(days = 1)
             else:
-                list_errors.append('data table is empty')
+                self.list_errors.append('data table is empty')
                 self.bool_initial_load = True
         else:
             string_error_max_date_00 = 'error in querying data table; '
             string_error_max_date_00 += list_max_date[1]
-            list_errors.append(string_error_max_date_00)
-
-        #--------------------------------------------------------------------------------#
-        # variable / object cleanup
-        #--------------------------------------------------------------------------------#
-
-        if bool_return:
-            tup_return = (bool_return, self.dt_sp500_start)
-        else:
-            tup_return = (bool_return, '||'.join(list_errors))
+            self.list_errors.append(string_error_max_date_00)
 
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
 
-        return tup_return
+        return bool_return
 
     def _get_sp500_data(self):
         '''
@@ -969,13 +952,9 @@ class Sp500Data(Sp500Base):
         None
 
         Return:
-        object
-        Type: tuple
-        Desc: length = 2; results of pulling the sp500 data
-        tuple[0] -> type: boolean; if the method resulted in sp500 data into a dataframe
-        tuple[1] -> type: pandas.DataFrame or string; if tuple[0] is True dataframe of sp500 data, if False
-            string of errors seperated by '||'
-       
+        variable
+        Type: boolean
+        Desc: if method executed as designed
         '''
 
         #--------------------------------------------------------------------------------#
@@ -989,8 +968,6 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
         # lists declarations
         #--------------------------------------------------------------------------------#
-
-        list_errors = list()
 
         #--------------------------------------------------------------------------------#
         # variables declarations
@@ -1052,22 +1029,13 @@ class Sp500Data(Sp500Base):
         if not self.bool_query_stooq_data:
             bool_return = True
         else:
-            list_errors.append(string_error_00)
-
-        #--------------------------------------------------------------------------------#
-        # variable / object cleanup
-        #--------------------------------------------------------------------------------#
-
-        if bool_return:
-            tup_return = (bool_return, self.df_raw_stooq)
-        else:
-            tup_return = (bool_return, '||'.join(list_errors))
+            self.list_errors.append(string_error_00)
 
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
 
-        return tup_return
+        return bool_return
 
     def _get_200_from_db(self):
         '''
@@ -1086,12 +1054,9 @@ class Sp500Data(Sp500Base):
         None
 
         Return:
-        object
-        Type: tuple
-        Desc: length = 2; results of pulling 200 records from the sql database
-        tuple[0] -> type: boolean; if the method pulling 200 records from db
-        tuple[1] -> type: pandas.DataFrame or string; if tuple[0] is True dataframe of 200 records,
-            if False string of errors seperated by '||'
+        variable
+        Type: boolean
+        Desc: if method executed as designed
         '''
 
         #--------------------------------------------------------------------------------#
@@ -1108,8 +1073,6 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
         # lists declarations
         #--------------------------------------------------------------------------------#
-
-        list_errors = list()
 
         #--------------------------------------------------------------------------------#
         # variables declarations
@@ -1159,22 +1122,13 @@ class Sp500Data(Sp500Base):
             del df_200
             bool_return = True
         else:
-            list_errors.append('error in query for newest 200 records of sp500')
-
-        #--------------------------------------------------------------------------------#
-        # variable / object cleanup
-        #--------------------------------------------------------------------------------#
-
-        if bool_return:
-            tup_return = (bool_return, self.df_200_data)
-        else:
-            tup_return = (bool_return, '||'.join(list_errors))
+            self.list_errors.append('error in query for newest 200 records of sp500')
 
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
 
-        return tup_return
+        return bool_return
 
     def _calc_metrics(self):
         '''
@@ -1193,12 +1147,9 @@ class Sp500Data(Sp500Base):
         None
 
         Return:
-        object
-        Type: tuple
-        Desc: length = 2; results of calculating metrics
-        tuple[0] -> type: boolean; if the method functioned properly
-        tuple[1] -> type: pandas.DataFrame or string; if tuple[0] is True dataframe of metrics,
-            if False string of errors seperated by '||'
+        variable
+        Type: boolean
+        Desc: if method executed as designed
         '''
 
         #--------------------------------------------------------------------------------#
@@ -1212,8 +1163,6 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
         # lists declarations
         #--------------------------------------------------------------------------------#
-
-        list_errors = list()
 
         #--------------------------------------------------------------------------------#
         # variables declarations
@@ -1305,26 +1254,17 @@ class Sp500Data(Sp500Base):
             del df_calc
         else:
             string_error_calc_00 = 'either the raw data from sp500 or database data is not present'
-            list_errors.append(string_error_calc_00)
+            self.list_errors.append(string_error_calc_00)
             if self.bool_verbose:
                 print(string_error_calc_00)
                 print('successful 200 records from locad db:', bool_db_data)
                 print('sucessful raw data from stooq:', bool_raw_data)
 
         #--------------------------------------------------------------------------------#
-        # variable / object cleanup
-        #--------------------------------------------------------------------------------#
-
-        if bool_return:
-            tup_return = (bool_return, self.df_metrics)
-        else:
-            tup_return = (bool_return, '||'.join(list_errors))
-
-        #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
 
-        return tup_return
+        return bool_return
 
     def _calc_inout_market(self):
         '''
@@ -1343,12 +1283,9 @@ class Sp500Data(Sp500Base):
         None
 
         Return:
-        object
-        Type: tuple
-        Desc: length = 2; results of calculating in or out of market
-        tuple[0] -> type: boolean; if the method functioned properly
-        tuple[1] -> type: pandas.DataFrame or string; if tuple[0] is True dataframe of in and out market,
-            if False string of errors seperated by '||'
+        variable
+        Type: boolean
+        Desc: if method executed as designed
         '''
 
         #--------------------------------------------------------------------------------#
@@ -1477,22 +1414,13 @@ class Sp500Data(Sp500Base):
 
             bool_return = True
         else:
-            list_errors.append('the analysis data container is not a pandas DataFrame')
-
-        #--------------------------------------------------------------------------------#
-        # variable / object cleanup
-        #--------------------------------------------------------------------------------#
-
-        if bool_return:
-            tup_return = (bool_return, self.df_metrics)
-        else:
-            tup_return = (bool_return, '||'.join(list_errors))
+            self.list_errors.append('the analysis data container is not a pandas DataFrame')
 
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
 
-        return tup_return
+        return bool_return
 
     def _insert_results(self):
         '''
@@ -1511,12 +1439,9 @@ class Sp500Data(Sp500Base):
         None
 
         Return:
-        object
-        Type: tuple
-        Desc: length = 2; results of the insert into the sql database
-        tuple[0] -> type: boolean; results of the insert into sql database
-        tuple[1] -> type: string; errors if tuple[0] == False string will be the
-            errors from the insert
+        variable
+        Type: boolean
+        Desc: if method executed as designed
         '''
 
         #--------------------------------------------------------------------------------#
@@ -1569,11 +1494,13 @@ class Sp500Data(Sp500Base):
             m_list_columns = self.list_columns,
             m_list_values = self.df_metrics.values.tolist())
 
+        if not list_insert_results[0]:
+            self.list_errors.append(list_insert_results[1])
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
 
-        return tuple(list_insert_results)
+        return list_insert_results[0]
 
 class Sp500Analysis(Sp500Base):
     '''

@@ -42,6 +42,9 @@ def main_class_test(m_list_user):
     sp_analysis = Sp500Analysis(
         ca_list_sql_up = m_list_user,
         ca_bool_verbose = True)
+    sp_visualizations = Sp500Visualizations(
+        ca_list_sql_up = m_list_user,
+        ca_bool_verbose = True)
 
     #--------------------------------------------------------------------------------#
     # time declarations
@@ -103,30 +106,33 @@ def main_class_test(m_list_user):
     tup_db_check = sp_data.check_sql_db()
     if tup_db_check[0]:
         print(string_get_sp500_data)
-        sp_data.data_wrapper()
+        tup_data_results = sp_data.data_wrapper()
     else:
         list_errors.append(sp_data.error_sql_db())
+        tup_data_results(False, '')
+    
+    if not tup_data_results[0]:
+        
 
     #--------------------------------------------------------------------------------#
     # conduct analysis
     #--------------------------------------------------------------------------------#
 
     print('\n' + string_analyze_data)
-    tup_anal_db_check = sp_analysis.check_sql_db()
-    if tup_anal_db_check[0]:
+    # tup_anal_db_check = sp_analysis.check_sql_db()
+    if tup_db_check[0]:
         print('\n' + string_analyze_data)
-        sp_analysis.analysis_wrapper()
+        tup_analysis_ = sp_analysis.analysis_wrapper()
     else:
         list_errors.append(sp_analysis.error_sql_db())
-
-    #ConductAnalysis(datetime_start, datetime_stop, float_money, float_annual_fee, m_list_user)
+        tup_analysis_ = (False, '||'.join(list_errors))
 
     #--------------------------------------------------------------------------------#
     # create visualization
     #--------------------------------------------------------------------------------#
 
-    # print('\n' + string_plotting_data)
+    print('\n' + string_plotting_data)
 
-    #CreateVisualization(datetime_start, datetime_stop, m_list_user)
+    # CreateVisualization(datetime_start, datetime_stop, m_list_user)
 
     return
