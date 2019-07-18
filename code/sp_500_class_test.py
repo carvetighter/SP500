@@ -132,4 +132,8 @@ def main_class_test(m_list_user):
 
     # CreateVisualization(datetime_start, datetime_stop, m_list_user)
 
+    #--------------------------------------------------------------------------------#
+    # errors
+    #--------------------------------------------------------------------------------#
+
     return

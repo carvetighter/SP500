@@ -22,6 +22,7 @@ from datetime import timedelta
 from datetime import timezone
 import fix_yahoo_finance
 import numpy
+import os
 import warnings
 from matplotlib import pyplot
 from matplotlib import style
@@ -1924,6 +1925,151 @@ class Sp500Analysis(Sp500Base):
 
         return bool_return
 
+class Sp500Visualizations(Sp500Base):
+    '''
+    '''
+
+    def __init__(self, cv_list_sql_up, cv_bool_verbose):
+        '''
+        class construtor
+
+        Requirements:
+        package SqlMethods
+        package pandas
+
+        Inputs:
+        c_list_sql_up
+        Type: list
+        Desc: user and password for sql database
+        c_list_sql_up[0] -> type: string; user name
+        c_list_sql_up[1] -> type: string; password
+
+        c_bool_verbose
+        Type: boolean
+        Desc: flag if verbose output desired
+
+        Important Info:
+        1. None
+
+        Attributes:
+        Sp500Base() attributes
+        '''
+        
+        #--------------------------------------------------------------------------#
+        # call parent constructor
+        #--------------------------------------------------------------------------#
+
+        Sp500Base.__init__(
+            self,
+            c_list_sql_up = cv_list_sql_up,
+            c_bool_verbose = cv_bool_verbose
+        )
+        
+        #--------------------------------------------------------------------------#
+        # pplot attributes
+        #--------------------------------------------------------------------------#
+        
+        style.use('ggplot')
+        
+        #--------------------------------------------------------------------------#
+        # time attributes
+        #--------------------------------------------------------------------------#
+
+        self.datetime_start = datetime(1995, 1, 1)
+        self.datetime_stop = datetime.now()
+        self.string_date_format = '%Y-%m-%d'
+        self.string_date_start = self.datetime_start.strftime(self.string_date_format)
+        self.string_date_stop = self.datetime_stop.strftime(self.string_date_format)
+
+        #--------------------------------------------------------------------------#
+        # data containers
+        #--------------------------------------------------------------------------#
+
+        self.df_vis_data = None
+
+        #--------------------------------------------------------------------------#
+        # sql query attributes
+        #--------------------------------------------------------------------------#
+
+        self.string_sql_query_where = '''date_date >= '{date_start}' and date_date <= '{date_stop}''''
+        self.string_sql_query = self.sql_conn.gen_select_statement(
+            m_string_select='*',
+            m_string_from=self.dict_sp500_tables.get('data', dict()).get('table_name', None),
+            m_string_where=self.string_sql_query_where.format(
+                date_start = self.string_date_start,
+                date_stop = self.string_date_stop
+            ),
+            m_string_end='order by date_date'
+        )
+
+        #--------------------------------------------------------------------------#
+        # visualization attributes
+        #--------------------------------------------------------------------------#
+
+        # path variables
+        self.string_path = os.path.join(os.path.abspath('../'), 'visualizations')
+        self.string_file = 'sp500_visualization_'  + self.datetime_stop.strftime('%Y-%m-%d %H_%M_%S') + '.png'
+        
+        # plot variables
+        x = 0
+        y_sp500 = 0
+        y_200_sma = 0
+        y_50_sma = 0
+        float_y_max = 0
+        float_y_min = 0
+        array_vertical_lines = 0
+
+    def _get_vis_data(self):
+        '''
+        this method...
+
+        Requirements:
+        package pandas
+        package SqlMethods
+
+        Inputs:
+        None
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: 
+        Desc: 
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        bool_error_getting_data = False
+
+        #--------------------------------------------------------------------------------#
+        # query data
+        #--------------------------------------------------------------------------------#
+
+        try:
+            self.df_vis_data = pandas.read_sql(self.string_sql_query, self.sql_conn._list_conn[1])
+        except Exception as e:
+            string_e_args = str(e.args)
+            bool_error_getting_data = True
+            string_print_error = 'There was an error getting the data from the database: ' + string_e_args
+            string_print_error += '.  Research and come back "dumkopf"!'
+            self.list_errors.append(string_print_error)
+        else:
+            pass
+        finally:
+            pass
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        return not bool_error_getting_data
+
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
         below is an example of a good method comment
@@ -2022,7 +2168,4 @@ class Sp500Analysis(Sp500Base):
         # return value
         #--------------------------------------------------------------------------------#
 
-        pass
-
-class Sp500Visualizations(Sp500Base):
-    pass
+        return
