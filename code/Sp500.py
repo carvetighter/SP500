@@ -2019,9 +2019,106 @@ class Sp500Visualizations(Sp500Base):
         float_y_min = 0
         array_vertical_lines = 0
 
+    #--------------------------------------------------------------------------#
+    # callable methods
+    #--------------------------------------------------------------------------#
+
+    def visualization_wrapper(self):
+        '''
+        this method is the wrapper to visualize the data from the analysis
+
+        Requirements:
+        package ??
+
+        Inputs:
+        None
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        variable
+        Type: boolean
+        Desc: method executes as designed
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # sequence declarations
+        #--------------------------------------------------------------------------------#
+
+        set_bools = set()
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # get data from database
+        #--------------------------------------------------------------------------------#
+
+        bool_vis_data = self._get_vis_data()
+        set_bools.add(bool_vis_data)
+
+        #--------------------------------------------------------------------------------#
+        # process the data
+        #--------------------------------------------------------------------------------#
+
+        if bool_vis_data:
+            bool_process_vis_data = self._process_vis_data()
+        else:
+            bool_process_vis_data = False
+            string_vis_process_error = 'data was not processed for visualization'
+            self.list_errors.append(string_vis_process_error)
+        set_bools.add(bool_process_vis_data)
+
+        #--------------------------------------------------------------------------------#
+        # create visualizations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # booleans
+        #--------------------------------------------------------------------------------#
+
+        if set_bools == {True}:
+            bool_visualizations = True
+        else:
+            bool_visualizations = False
+        
+        if self.bool_verbose and set_bools != {True}:
+            prints('errors are as follows:')
+            print('||'.join(self.list_errors))
+            
+        #--------------------------------------------------------------------------------#
+        # return
+        #--------------------------------------------------------------------------------#
+
+        return bool_visualizations
+
+    #--------------------------------------------------------------------------#
+    # supportive methods
+    #--------------------------------------------------------------------------#
+
     def _get_vis_data(self):
         '''
-        this method...
+        this method queries the data from the database
 
         Requirements:
         package pandas
@@ -2037,8 +2134,9 @@ class Sp500Visualizations(Sp500Base):
 
         Return:
         object
-        Type: 
-        Desc: 
+        Type: pandas.DataFrame
+        Desc: data from the sql database which holds the transaction data
+            columns -> ** see base class documentation
         '''
 
         #--------------------------------------------------------------------------------#
@@ -2069,6 +2167,156 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         return not bool_error_getting_data
+
+    def def_Methods(self, list_cluster_results, array_sparse_matrix):
+        '''
+        this method processes the data for the visualizations
+
+        Requirements:
+        package pandas
+
+        Inputs:
+        None
+        Type: n/a
+        Desc: n/a
+
+        Important Info:
+        None
+
+        Return:
+        variable
+        Type: boolean
+        Desc: data for visualizations has been processed sucessfully
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
+
+        bool_vis_proc_data = True
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # format x-values
+        #--------------------------------------------------------------------------------#
+        
+        # x
+        self.df_vis_data['date_date'] = self.df_vis_data['date_date'].apply(
+            lambda x: datetime.strptime(x, '%Y-%m-%d')
+        )
+
+        y_sp500 = dataframe_data['float_close'].values
+        y_200_sma = dataframe_data['float_200_sma'].values
+        y_50_sma = dataframe_data['float_50_sma'].values
+
+        #--------------------------------------------------------------------------------#
+        # get the triggers on when in and out of the market
+        #--------------------------------------------------------------------------------#
+
+        series_bool_trigger = dataframe_data['string_trigger'] != 'None'
+        dataframe_triggers = dataframe_data[series_bool_trigger]
+        index_df_trigger_index = dataframe_triggers.index
+
+        #--------------------------------------------------------------------------------#
+        # check the first element of the data from the database 
+        # to ensure it is in In the market
+        #--------------------------------------------------------------------------------#
+
+        if dataframe_triggers['string_in_market'].iloc[0] == 'False':
+            int_start = 1
+        else:
+            int_start = 0
+
+        #--------------------------------------------------------------------------------#
+        # create a list of row numbers in the dataframe to plot the in
+        # market lines; if the first value in the data is not in the market
+        # in the trigger dataframe get the index for the dataframe
+        #--------------------------------------------------------------------------------#
+        
+        if int_start == 1:
+            int_loc_01 = index_df_trigger_index[0]
+            list_in_market.append([dataframe_data['date_date'].iloc[0:int_loc_01 + 1].values,
+                                                    dataframe_data['float_close'].iloc[0:int_loc_01 + 1].values])
+
+        # loop through the dataframe of triggers to get the values for the in market for the plot
+        for int_index in range(int_start, len(index_df_trigger_index) - 1):
+            # get the indexes from the dataframe_triggers for the dataframe_data
+            int_loc_01 = index_df_trigger_index[int_index]
+            int_loc_02 = index_df_trigger_index[int_index + 1]
+
+            # compare the markets status
+            string_market_status_01 = dataframe_triggers['string_in_market'].iloc[int_index]
+            string_market_status_02 = dataframe_triggers['string_in_market'].iloc[int_index + 1]
+
+            # check if the market is in
+            if string_market_status_01 == 'True' and string_market_status_02 == 'False':
+                list_in_market.append([dataframe_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
+                                                        dataframe_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
+
+        # get the vertical lines for the charts
+        array_df_trigger_false = dataframe_triggers['string_in_market'] == 'False'
+        array_df_trigger_true = dataframe_triggers['string_in_market'] == 'True'
+        list_vertical_lines_false = list(dataframe_triggers[array_df_trigger_false]['date_date'].values)
+        list_vertical_lines_true = list(dataframe_triggers[array_df_trigger_true]['date_date'].values)
+                
+        # check the last value, if true then add to the end of the dataframe
+        if dataframe_triggers['string_in_market'].iloc[len(index_df_trigger_index) - 1] == 'True':
+            # get the last two locations
+            int_loc_01 = index_df_trigger_index[-1]
+            int_loc_02 = dataframe_data.shape[0] - 1
+
+                # add last element into the market
+                list_in_market.append([dataframe_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
+                                                        dataframe_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
+
+            # get max and min y values
+            float_y_max = max(dataframe_data['float_close']) + 50
+            float_y_min = min(dataframe_data['float_close']) - 50
+
+            # convert dates to a datetime element for plotting
+            #for plot_in_market in list_in_market:
+            #    for int_index in range(0, len(plot_in_market[0])):
+            #        plot_in_market[0][int_index] = datetime.strptime(plot_in_market[0][int_index], '%Y-%m-%d')
+
+            #for int_index in range(0, len(array_vertical_lines)):
+            #    array_vertical_lines[int_index] = datetime.strptime(array_vertical_lines[int_index], '%Y-%m-%d')
+
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # sectional comment
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # variable / object cleanup
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        return
 
     def def_Methods(self, list_cluster_results, array_sparse_matrix):
         '''
