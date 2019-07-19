@@ -2010,14 +2010,18 @@ class Sp500Visualizations(Sp500Base):
         self.string_path = os.path.join(os.path.abspath('../'), 'visualizations')
         self.string_file = 'sp500_visualization_'  + self.datetime_stop.strftime('%Y-%m-%d %H_%M_%S') + '.png'
         
-        # plot variables
-        x = 0
-        y_sp500 = 0
-        y_200_sma = 0
-        y_50_sma = 0
-        float_y_max = 0
-        float_y_min = 0
-        array_vertical_lines = 0
+        # plot data
+        self.dict_plot_data = {
+            'x':None,
+            'y_sp500':None,
+            'y_200_sma':None,
+            'y_50_sma':None,
+            'y_max':None,
+            'y_min':None,
+            'verticle_lines_true':None,
+            'verticle_lines_false':None,
+            'in_market':None,
+        }
 
     #--------------------------------------------------------------------------#
     # callable methods
@@ -2074,6 +2078,7 @@ class Sp500Visualizations(Sp500Base):
         # get data from database
         #--------------------------------------------------------------------------------#
 
+        print('retreiving data for visualization')
         bool_vis_data = self._get_vis_data()
         set_bools.add(bool_vis_data)
 
@@ -2082,6 +2087,7 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if bool_vis_data:
+            print('processing data for visualization')
             bool_process_vis_data = self._process_vis_data()
         else:
             bool_process_vis_data = False
@@ -2092,6 +2098,11 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------------#
         # create visualizations
         #--------------------------------------------------------------------------------#
+
+        if bool_process_vis_data:
+            bool_create_plots = self._create_plots()
+        else:
+            bool_create_plots = False
 
         #--------------------------------------------------------------------------------#
         # booleans
@@ -2158,7 +2169,7 @@ class Sp500Visualizations(Sp500Base):
             string_print_error += '.  Research and come back "dumkopf"!'
             self.list_errors.append(string_print_error)
         else:
-            pass
+            self.df_vis_data = self.df_vis_data.astype(str)
         finally:
             pass
 
@@ -2168,12 +2179,13 @@ class Sp500Visualizations(Sp500Base):
 
         return not bool_error_getting_data
 
-    def def_Methods(self, list_cluster_results, array_sparse_matrix):
+    def _process_vis_data(self):
         '''
         this method processes the data for the visualizations
 
         Requirements:
         package pandas
+        package datetime
 
         Inputs:
         None
@@ -2205,7 +2217,174 @@ class Sp500Visualizations(Sp500Base):
         # variables declarations
         #--------------------------------------------------------------------------------#
 
-        bool_vis_proc_data = True
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #
+        # Start
+        #
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
+        #--------------------------------------------------------------------------------#
+        # check dataframe
+        #--------------------------------------------------------------------------------#
+
+        if isinstance(self.df_vis_data, pandas.DataFrame) and not sef.df_vis_data.empty:
+            bool_vis_proc_data = True
+        else:
+            bool_vis_proc_data = False
+
+        #--------------------------------------------------------------------------------#
+        # format x-values and get values
+        #--------------------------------------------------------------------------------#
+        
+        if bool_vis_proc_data:
+            self.dict_plot_data['x'] = self.df_vis_data['date_date'].apply(
+                lambda x: datetime.strptime(x, '%Y-%m-%d')
+            )
+            self.dict_plot_data['y_sp500'] = dataframe_data['float_close'].values
+            self.dict_plot_data['y_200_sma'] = dataframe_data['float_200_sma'].values
+            self.dict_plot_data['y_50_sma'] = dataframe_data['float_50_sma'].values
+            self.dict_plot_data['y_max'] = dataframe_data['float_close'].max() + 50
+            self.dict_plot_data['y_min'] = dataframe_data['float_close'].min() - 50
+
+            #--------------------------------------------------------------------------------#
+            # get the triggers on when in and out of the market
+            #--------------------------------------------------------------------------------#
+
+            series_bool_trigger = dataframe_data['string_trigger'] != 'None'
+            dataframe_triggers = dataframe_data[series_bool_trigger]
+            index_df_trigger_index = dataframe_triggers.index
+
+            #--------------------------------------------------------------------------------#
+            # check the first element of the data from the database 
+            # to ensure it is in In the market
+            #--------------------------------------------------------------------------------#
+
+            if dataframe_triggers['string_in_market'].iloc[0] == 'False':
+                int_start = 1
+            else:
+                int_start = 0
+
+            #--------------------------------------------------------------------------------#
+            # create a list of row numbers in the dataframe to plot the in
+            # market lines; if the first value in the data is not in the market
+            # in the trigger dataframe get the index for the dataframe
+            #--------------------------------------------------------------------------------#
+
+            if int_start == 1:
+                int_loc_01 = index_df_trigger_index[0]
+                list_in_market.append([dataframe_data['date_date'].iloc[0:int_loc_01 + 1].values,
+                                                        dataframe_data['float_close'].iloc[0:int_loc_01 + 1].values])
+
+            #--------------------------------------------------------------------------------#
+            # loop through the dataframe of triggers to get the values for
+            # the in market for the plot
+            #--------------------------------------------------------------------------------#
+
+            for int_index in range(int_start, len(index_df_trigger_index) - 1):
+                # get the indexes from the dataframe_triggers for the dataframe_data
+                int_loc_01 = index_df_trigger_index[int_index]
+                int_loc_02 = index_df_trigger_index[int_index + 1]
+
+                # compare the markets status
+                string_market_status_01 = dataframe_triggers['string_in_market'].iloc[int_index]
+                string_market_status_02 = dataframe_triggers['string_in_market'].iloc[int_index + 1]
+
+                # check if the market is in
+                if string_market_status_01 == 'True' and string_market_status_02 == 'False':
+                    list_in_market.append([dataframe_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
+                                                            dataframe_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
+
+            #--------------------------------------------------------------------------------#
+            # get the vertical lines for the charts
+            #--------------------------------------------------------------------------------#
+
+            series_trigger_false = dataframe_triggers['string_in_market'] == 'False'
+            series_trigger_true = dataframe_triggers['string_in_market'] == 'True'
+            self.dict_plot_data['verticle_lines_false'] = list(dataframe_triggers[series_trigger_false]['date_date'].values)
+            self.dict_plot_data['verticle_lines_true'] = list(dataframe_triggers[series_trigger_true]['date_date'].values)
+
+            #--------------------------------------------------------------------------------#
+            # check the last value, if true then add to the end of
+            # the dataframe
+            #--------------------------------------------------------------------------------#
+
+            if dataframe_triggers['string_in_market'].iloc[len(index_df_trigger_index) - 1] == 'True':
+                # get the last two locations
+                int_loc_01 = index_df_trigger_index[-1]
+                int_loc_02 = dataframe_data.shape[0] - 1
+
+                    # add last element into the market
+                    list_in_market.append([dataframe_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
+                                                            dataframe_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
+
+            self.dict_plot_data['in_market'] = list_in_market
+
+        #--------------------------------------------------------------------------------#
+        # return value
+        #--------------------------------------------------------------------------------#
+
+        return bool_vis_proc_data
+
+    def_create_plots(self):
+        '''
+        this method creates the plots for the analysis
+
+        Requirements:
+        package time
+        package numpy
+        package statistics
+        package sklearn.metrics
+
+        Inputs:
+        list_cluster_results
+        Type: list
+        Desc: the list of parameters for the clustering object
+        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
+                         or dense array
+        list[x][1] -> type: string; the cluster ID with the parameters
+
+        array_sparse_matrix
+        Type: numpy array
+        Desc: a sparse matrix of the samples used for clustering
+
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: list
+        Desc: this of the clusters that meet the evaluation criterea
+        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
+                        or dense array
+        list[x][1] -> type: string; the cluster ID with the parameters
+        list[x][2] -> type: float; silhouette average value for the entire set of data
+        list[x][3] -> type: array; 1 dimensional array of silhouette values for each data sample
+        list[x][4] -> type: list; list of lists, the cluster and the average silhoutte value for each cluster, the orders is sorted 
+                            highest to lowest silhoutte value
+                            list[x][4][x][0] -> int; cluster label
+                            list[x][4][x][1] -> float; cluster silhoutte value
+        list[x][5] -> type: list; a list that contains the cluster label and the number of samples in each cluster
+                           list[x][5][x][0] -> int; cluster label
+                           list[x][5][x][1] -> int; number of samples in cluster list[x][5][x][0]
+        '''
+
+        #--------------------------------------------------------------------------------#
+        # objects declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # time declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # lists declarations
+        #--------------------------------------------------------------------------------#
+
+        #--------------------------------------------------------------------------------#
+        # variables declarations
+        #--------------------------------------------------------------------------------#
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -2216,89 +2395,8 @@ class Sp500Visualizations(Sp500Base):
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
         #--------------------------------------------------------------------------------#
-        # format x-values
+        # sub-section comment
         #--------------------------------------------------------------------------------#
-        
-        # x
-        self.df_vis_data['date_date'] = self.df_vis_data['date_date'].apply(
-            lambda x: datetime.strptime(x, '%Y-%m-%d')
-        )
-
-        y_sp500 = dataframe_data['float_close'].values
-        y_200_sma = dataframe_data['float_200_sma'].values
-        y_50_sma = dataframe_data['float_50_sma'].values
-
-        #--------------------------------------------------------------------------------#
-        # get the triggers on when in and out of the market
-        #--------------------------------------------------------------------------------#
-
-        series_bool_trigger = dataframe_data['string_trigger'] != 'None'
-        dataframe_triggers = dataframe_data[series_bool_trigger]
-        index_df_trigger_index = dataframe_triggers.index
-
-        #--------------------------------------------------------------------------------#
-        # check the first element of the data from the database 
-        # to ensure it is in In the market
-        #--------------------------------------------------------------------------------#
-
-        if dataframe_triggers['string_in_market'].iloc[0] == 'False':
-            int_start = 1
-        else:
-            int_start = 0
-
-        #--------------------------------------------------------------------------------#
-        # create a list of row numbers in the dataframe to plot the in
-        # market lines; if the first value in the data is not in the market
-        # in the trigger dataframe get the index for the dataframe
-        #--------------------------------------------------------------------------------#
-        
-        if int_start == 1:
-            int_loc_01 = index_df_trigger_index[0]
-            list_in_market.append([dataframe_data['date_date'].iloc[0:int_loc_01 + 1].values,
-                                                    dataframe_data['float_close'].iloc[0:int_loc_01 + 1].values])
-
-        # loop through the dataframe of triggers to get the values for the in market for the plot
-        for int_index in range(int_start, len(index_df_trigger_index) - 1):
-            # get the indexes from the dataframe_triggers for the dataframe_data
-            int_loc_01 = index_df_trigger_index[int_index]
-            int_loc_02 = index_df_trigger_index[int_index + 1]
-
-            # compare the markets status
-            string_market_status_01 = dataframe_triggers['string_in_market'].iloc[int_index]
-            string_market_status_02 = dataframe_triggers['string_in_market'].iloc[int_index + 1]
-
-            # check if the market is in
-            if string_market_status_01 == 'True' and string_market_status_02 == 'False':
-                list_in_market.append([dataframe_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
-                                                        dataframe_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
-
-        # get the vertical lines for the charts
-        array_df_trigger_false = dataframe_triggers['string_in_market'] == 'False'
-        array_df_trigger_true = dataframe_triggers['string_in_market'] == 'True'
-        list_vertical_lines_false = list(dataframe_triggers[array_df_trigger_false]['date_date'].values)
-        list_vertical_lines_true = list(dataframe_triggers[array_df_trigger_true]['date_date'].values)
-                
-        # check the last value, if true then add to the end of the dataframe
-        if dataframe_triggers['string_in_market'].iloc[len(index_df_trigger_index) - 1] == 'True':
-            # get the last two locations
-            int_loc_01 = index_df_trigger_index[-1]
-            int_loc_02 = dataframe_data.shape[0] - 1
-
-                # add last element into the market
-                list_in_market.append([dataframe_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
-                                                        dataframe_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
-
-            # get max and min y values
-            float_y_max = max(dataframe_data['float_close']) + 50
-            float_y_min = min(dataframe_data['float_close']) - 50
-
-            # convert dates to a datetime element for plotting
-            #for plot_in_market in list_in_market:
-            #    for int_index in range(0, len(plot_in_market[0])):
-            #        plot_in_market[0][int_index] = datetime.strptime(plot_in_market[0][int_index], '%Y-%m-%d')
-
-            #for int_index in range(0, len(array_vertical_lines)):
-            #    array_vertical_lines[int_index] = datetime.strptime(array_vertical_lines[int_index], '%Y-%m-%d')
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
