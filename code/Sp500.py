@@ -2012,15 +2012,15 @@ class Sp500Visualizations(Sp500Base):
         
         # plot data
         self.dict_plot_data = {
-            'x':None,
-            'y_sp500':None,
-            'y_200_sma':None,
-            'y_50_sma':None,
-            'y_max':None,
-            'y_min':None,
-            'verticle_lines_true':None,
-            'verticle_lines_false':None,
-            'in_market':None,
+            'x':None, # pandas.Series
+            'y_sp500':None, # pandas.Series
+            'y_200_sma':None, # pandas.Series
+            'y_50_sma':None, # pandas.Series
+            'y_max':None, # float
+            'y_min':None, # float
+            'verticle_lines_true':None, # list of datetime
+            'verticle_lines_false':None, # list of datetime
+            'in_market':None, # list of lists
         }
 
     #--------------------------------------------------------------------------#
