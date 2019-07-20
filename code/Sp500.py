@@ -2242,9 +2242,9 @@ class Sp500Visualizations(Sp500Base):
             self.dict_plot_data['x'] = self.df_vis_data['date_date'].apply(
                 lambda x: datetime.strptime(x, '%Y-%m-%d')
             )
-            self.dict_plot_data['y_sp500'] = dataframe_data['float_close'].values
-            self.dict_plot_data['y_200_sma'] = dataframe_data['float_200_sma'].values
-            self.dict_plot_data['y_50_sma'] = dataframe_data['float_50_sma'].values
+            self.dict_plot_data['y_sp500'] = dataframe_data['float_close']
+            self.dict_plot_data['y_200_sma'] = dataframe_data['float_200_sma']
+            self.dict_plot_data['y_50_sma'] = dataframe_data['float_50_sma']
             self.dict_plot_data['y_max'] = dataframe_data['float_close'].max() + 50
             self.dict_plot_data['y_min'] = dataframe_data['float_close'].min() - 50
 
@@ -2329,45 +2329,25 @@ class Sp500Visualizations(Sp500Base):
 
     def _create_plots(self):
         '''
-        this method creates the plots for the analysis
+        this method creates the plots for the analysis saves the plot to a designated location
 
         Requirements:
-        package time
+        package matplotlib.pyplot
+        package pandas
         package numpy
-        package statistics
-        package sklearn.metrics
 
         Inputs:
-        list_cluster_results
-        Type: list
-        Desc: the list of parameters for the clustering object
-        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
-                         or dense array
-        list[x][1] -> type: string; the cluster ID with the parameters
-
-        array_sparse_matrix
-        Type: numpy array
-        Desc: a sparse matrix of the samples used for clustering
+        None
+        Type: n/a
+        Desc: n/a
 
         Important Info:
         None
 
         Return:
-        object
-        Type: list
-        Desc: this of the clusters that meet the evaluation criterea
-        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
-                        or dense array
-        list[x][1] -> type: string; the cluster ID with the parameters
-        list[x][2] -> type: float; silhouette average value for the entire set of data
-        list[x][3] -> type: array; 1 dimensional array of silhouette values for each data sample
-        list[x][4] -> type: list; list of lists, the cluster and the average silhoutte value for each cluster, the orders is sorted 
-                            highest to lowest silhoutte value
-                            list[x][4][x][0] -> int; cluster label
-                            list[x][4][x][1] -> float; cluster silhoutte value
-        list[x][5] -> type: list; a list that contains the cluster label and the number of samples in each cluster
-                           list[x][5][x][0] -> int; cluster label
-                           list[x][5][x][1] -> int; number of samples in cluster list[x][5][x][0]
+        None
+        Type: n/a
+        Desc: n/a
         '''
 
         #--------------------------------------------------------------------------------#
