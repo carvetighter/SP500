@@ -2327,7 +2327,7 @@ class Sp500Visualizations(Sp500Base):
 
         return bool_vis_proc_data
 
-    def_create_plots(self):
+    def _create_plots(self):
         '''
         this method creates the plots for the analysis
 
