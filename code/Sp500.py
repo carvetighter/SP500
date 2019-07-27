@@ -2186,7 +2186,7 @@ class Sp500Visualizations(Sp500Base):
             self.df_vis_data = self.df_vis_data.astype(dict_dtype)
         finally:
             pass
-
+        
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
@@ -2407,7 +2407,6 @@ class Sp500Visualizations(Sp500Base):
         list_to_plot = self.dict_plot_data.get('in_market', list())
         
         # when in the market (green lines)
-        '''
         bool_label = True
         for plot_in_market in list_to_plot:
             if bool_label:
@@ -2416,7 +2415,7 @@ class Sp500Visualizations(Sp500Base):
                     label = 'In Market')
             else:
                 axes[0].plot(plot_in_market[0], plot_in_market[1], color = 'green', linewidth = 2.5, linestyle = '-')
-        '''
+
         # upper plot elements
         axes[0].set(title = 'In / Out of Market', xlabel = 'date of close', ylabel = 'close')
         axes[0].set_ylim(self.dict_plot_data.get('y_min', None), self.dict_plot_data.get('y_max', None))
