@@ -4,15 +4,16 @@
 # File / Package Import
 #
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#        
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
 import DataPrep, SqlMethods
-import pandas, fix_yahoo_finance, numpy, warnings
+import pandas, fix_yahoo_finance, numpy
 from pandas_datareader import data
 from matplotlib import pyplot, style
 from datetime import datetime, time, timedelta, timezone
 
 # ignore warnings
+import warnings
 warnings.simplefilter('ignore')
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -175,7 +176,6 @@ def Setup(m_sql_conn, list_sql_tables):
                                       'dollar_gm_with_fee', 'dollar_man_fee', 'dollar_buy_hold', 'dollar_gm_no_fee', 'string_symbol']
     list_sql_col_dt_sp500_analysis = ['date', 'date', 'date', 'float', 'int', 'int', 'int', 'int', 'varchar(10)', 'float', 'float', 'float',
                                    'float', 'float', 'varchar(50)']
-
     dict_sql_table_col_dt = {'dbo.sp500_data':[list_sql_col_names_sp500_data, list_sql_col_dt_sp500_data],
                           'dbo.sp500_analysis':[list_sql_col_names_sp500_analysis, list_sql_col_dt_sp500_analysis]}
 
@@ -434,7 +434,7 @@ def CalcInOutMarket(m_dataframe_data, bool_initial_load):
             else:
                 if float_delta < float_delta_high_low:
                     float_delta_high_low = float_delta
-        
+
         # update dataframe
         m_dataframe_data['string_in_market'].iloc[int_index] = bool_in_market
         m_dataframe_data['float_delta_hl'].iloc[int_index] = float_delta_high_low
@@ -707,7 +707,7 @@ def GetDataMarketStatus(bool_initial_load = False, m_list_user = []):
     if list_sql_conn[0] == True:
         list_sql_conn[1].close()
 
-def ConductAnalysis(datetime_oldest = datetime(1970, 1, 1), datetime_newest = datetime.now(), 
+def ConductAnalysis(datetime_oldest = datetime(1970, 1, 1), datetime_newest = datetime.now(),
                     float_initial_investment = 1000., float_annual_fee = 0.02, m_list_user = []):
     ###############################################################################################
     ###############################################################################################
@@ -1340,20 +1340,3 @@ def Main(m_list_user):
         print('-------------------------------------------------------------')
 
         CreateVisualization(datetime_start, datetime_stop, m_list_user)
-
-    #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-    #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-    #
-    # sectional comment
-    #
-    #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-    #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#                
-
-    #------------------------------------------------------------------------------------------------------------------------------------------------------#
-    # variable / object cleanup
-    #------------------------------------------------------------------------------------------------------------------------------------------------------#
-    pass
-
-# call Start()
-#if __name__ == '__main__':
-#    Main()
