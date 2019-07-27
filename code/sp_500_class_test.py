@@ -119,7 +119,6 @@ def main_class_test(m_list_user):
     #--------------------------------------------------------------------------------#
 
     '''
-    print('\n' + string_analyze_data)
     if bool_db_check and bool_data_results:
         print('\n' + string_analyze_data)
         bool_analysis = sp_analysis.analysis_wrapper()
@@ -138,7 +137,6 @@ def main_class_test(m_list_user):
     bool_db_check = True
     bool_data_results = True
 
-    print('\n' + string_plotting_data)
     if bool_db_check and bool_data_results:
         print('\n' + string_plotting_data)
         bool_visualizations = sp_visualizations.visualization_wrapper()

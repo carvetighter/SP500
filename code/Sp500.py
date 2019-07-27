@@ -17,13 +17,12 @@ Sp500 visualizations class -> conducts the visualizations of the analysis
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
 from datetime import datetime
-from datetime import time
+# from datetime import time
 from datetime import timedelta
-from datetime import timezone
+# from datetime import timezone
 import fix_yahoo_finance
 import numpy
 import os
-import warnings
 from matplotlib import pyplot
 from matplotlib import style
 from SqlMethods import SqlMethods
@@ -32,9 +31,10 @@ from SqlMethods import SqlMethods
 import pandas
 pandas.core.common.is_list_like = pandas.api.types.is_list_like
 from pandas_datareader import data
-import pandas_datareader
+# import pandas_datareader
 
 # ignore warnings
+import warnings
 warnings.simplefilter('ignore')
 
 class Sp500Base(object):
@@ -224,7 +224,7 @@ class Sp500Base(object):
                 string_errors = '||'.join(self.list_errors)
             tup_return = (bool_create_tables, string_errors)
         self.tup_sql_db_setup = tup_return
-                
+
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
@@ -1289,8 +1289,6 @@ class Sp500Data(Sp500Base):
         # lists declarations
         #--------------------------------------------------------------------------------#
 
-        list_errors = list()
-
         #--------------------------------------------------------------------------------#
         # variables declarations
         #--------------------------------------------------------------------------------#
@@ -1992,7 +1990,7 @@ class Sp500Visualizations(Sp500Base):
         # sql query attributes
         #--------------------------------------------------------------------------#
 
-        #self.string_sql_query_where = date_date >= '{date_start}' and date_date <= '{date_stop}'
+        self.string_sql_query_where = "date_date >= '{date_start}' and date_date <= '{date_stop}'"
         self.string_sql_query = self.sql_conn.gen_select_statement(
             m_string_select='*',
             m_string_from=self.dict_sp500_tables.get('data', dict()).get('table_name', None),
@@ -2019,8 +2017,8 @@ class Sp500Visualizations(Sp500Base):
             'y_50_sma':None, # pandas.Series
             'y_max':None, # float
             'y_min':None, # float
-            'verticle_lines_true':None, # list of datetime
-            'verticle_lines_false':None, # list of datetime
+            'vertical_lines_true':None, # list of datetime
+            'vertical_lines_false':None, # list of datetime
             'in_market':None, # list of lists
         }
 
@@ -2116,7 +2114,7 @@ class Sp500Visualizations(Sp500Base):
         else:
             bool_visualizations = False
         
-        if self.bool_verbose and set_bools != {True}:
+        if self.bool_verbose and not bool_visualizations:
             print('errors are as follows:')
             print('||'.join(self.list_errors))
             
@@ -2172,7 +2170,20 @@ class Sp500Visualizations(Sp500Base):
             string_print_error += '.  Research and come back "dumkopf"!'
             self.list_errors.append(string_print_error)
         else:
-            self.df_vis_data = self.df_vis_data.astype(str)
+            dict_dtype = {
+                'date_date':str,
+                'float_close':numpy.float,
+                'string_in_market':str,
+                'string_trigger':str,
+                'float_50_sma':numpy.float,
+                'float_200_sma':numpy.float,
+                'float_delta_50_200':numpy.float,
+                'float_delta_hl':numpy.float,
+                'float_delta_div_hl':numpy.float,
+                'float_velocity':numpy.float,
+                'float_accel':numpy.float
+            }
+            self.df_vis_data = self.df_vis_data.astype(dict_dtype)
         finally:
             pass
 
@@ -2216,6 +2227,8 @@ class Sp500Visualizations(Sp500Base):
         # lists declarations
         #--------------------------------------------------------------------------------#
 
+        list_in_market = list()
+
         #--------------------------------------------------------------------------------#
         # variables declarations
         #--------------------------------------------------------------------------------#
@@ -2245,18 +2258,18 @@ class Sp500Visualizations(Sp500Base):
             self.dict_plot_data['x'] = self.df_vis_data['date_date'].apply(
                 lambda x: datetime.strptime(x, '%Y-%m-%d')
             )
-            self.dict_plot_data['y_sp500'] = dataframe_data['float_close']
-            self.dict_plot_data['y_200_sma'] = dataframe_data['float_200_sma']
-            self.dict_plot_data['y_50_sma'] = dataframe_data['float_50_sma']
-            self.dict_plot_data['y_max'] = dataframe_data['float_close'].max() + 50
-            self.dict_plot_data['y_min'] = dataframe_data['float_close'].min() - 50
+            self.dict_plot_data['y_sp500'] = self.df_vis_data['float_close']
+            self.dict_plot_data['y_200_sma'] = self.df_vis_data['float_200_sma']
+            self.dict_plot_data['y_50_sma'] = self.df_vis_data['float_50_sma']
+            self.dict_plot_data['y_max'] = self.df_vis_data['float_close'].max() + 50
+            self.dict_plot_data['y_min'] = self.df_vis_data['float_close'].min() - 50
 
             #--------------------------------------------------------------------------------#
             # get the triggers on when in and out of the market
             #--------------------------------------------------------------------------------#
 
-            series_bool_trigger = dataframe_data['string_trigger'] != 'None'
-            dataframe_triggers = dataframe_data[series_bool_trigger]
+            series_bool_trigger = self.df_vis_data['string_trigger'] != 'None'
+            dataframe_triggers = self.df_vis_data[series_bool_trigger]
             index_df_trigger_index = dataframe_triggers.index
 
             #--------------------------------------------------------------------------------#
@@ -2277,8 +2290,8 @@ class Sp500Visualizations(Sp500Base):
 
             if int_start == 1:
                 int_loc_01 = index_df_trigger_index[0]
-                list_in_market.append([dataframe_data['date_date'].iloc[0:int_loc_01 + 1].values,
-                                                        dataframe_data['float_close'].iloc[0:int_loc_01 + 1].values])
+                list_in_market.append([self.df_vis_data['date_date'].iloc[0:int_loc_01 + 1].values,
+                                                        self.df_vis_data['float_close'].iloc[0:int_loc_01 + 1].values])
 
             #--------------------------------------------------------------------------------#
             # loop through the dataframe of triggers to get the values for
@@ -2286,7 +2299,7 @@ class Sp500Visualizations(Sp500Base):
             #--------------------------------------------------------------------------------#
 
             for int_index in range(int_start, len(index_df_trigger_index) - 1):
-                # get the indexes from the dataframe_triggers for the dataframe_data
+                # get the indexes from the dataframe_triggers for the self.df_vis_data
                 int_loc_01 = index_df_trigger_index[int_index]
                 int_loc_02 = index_df_trigger_index[int_index + 1]
 
@@ -2296,8 +2309,8 @@ class Sp500Visualizations(Sp500Base):
 
                 # check if the market is in
                 if string_market_status_01 == 'True' and string_market_status_02 == 'False':
-                    list_in_market.append([dataframe_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
-                                                            dataframe_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
+                    list_in_market.append([self.df_vis_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
+                                                            self.df_vis_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
 
             #--------------------------------------------------------------------------------#
             # get the vertical lines for the charts
@@ -2305,8 +2318,8 @@ class Sp500Visualizations(Sp500Base):
 
             series_trigger_false = dataframe_triggers['string_in_market'] == 'False'
             series_trigger_true = dataframe_triggers['string_in_market'] == 'True'
-            self.dict_plot_data['verticle_lines_false'] = list(dataframe_triggers[series_trigger_false]['date_date'].values)
-            self.dict_plot_data['verticle_lines_true'] = list(dataframe_triggers[series_trigger_true]['date_date'].values)
+            self.dict_plot_data['vertical_lines_false'] = list(dataframe_triggers[series_trigger_false]['date_date'].values)
+            self.dict_plot_data['vertical_lines_true'] = list(dataframe_triggers[series_trigger_true]['date_date'].values)
 
             #--------------------------------------------------------------------------------#
             # check the last value, if true then add to the end of
@@ -2316,12 +2329,12 @@ class Sp500Visualizations(Sp500Base):
             if dataframe_triggers['string_in_market'].iloc[len(index_df_trigger_index) - 1] == 'True':
                 # get the last two locations
                 int_loc_01 = index_df_trigger_index[-1]
-                int_loc_02 = dataframe_data.shape[0] - 1
+                int_loc_02 = self.df_vis_data.shape[0] - 1
 
                 # add last element into the market
-                list_in_market.append([dataframe_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
-                                                            dataframe_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
-
+                list_in_market.append([self.df_vis_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
+                                                            self.df_vis_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
+            
             self.dict_plot_data['in_market'] = list_in_market
 
         #--------------------------------------------------------------------------------#
@@ -2386,20 +2399,24 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         # sp500 only (black lines)
-        axes[0].plot(x = self.dict_plot_data.get('x', pandas.Series()),
-            y = self.dict_plot_data.get('y_sp500', pandas.Series()), color = 'black', linewidth = 2, linestyle = '-',
+        axes[0].plot(self.dict_plot_data.get('x', pandas.Series()),
+            self.dict_plot_data.get('y_sp500', pandas.Series()), color = 'black', linewidth = 2, linestyle = '-',
             label = 'SP500')
+
+        # debug code
+        list_to_plot = self.dict_plot_data.get('in_market', list())
         
         # when in the market (green lines)
+        '''
         bool_label = True
-        for plot_in_market in self.dict_plot_data.get('in_market', list()):
-            if bool_label == True:
+        for plot_in_market in list_to_plot:
+            if bool_label:
                 bool_label = False
-                axes[0].plot(x = plot_in_market[0], y = plot_in_market[1], color = 'green', linewidth = 2.5, linestyle = '-',
+                axes[0].plot(plot_in_market[0], plot_in_market[1], color = 'green', linewidth = 2.5, linestyle = '-',
                     label = 'In Market')
             else:
-                axes[0].plot(x = plot_in_market[0], y  = plot_in_market[1], color = 'green', linewidth = 2.5, linestyle = '-')
-        
+                axes[0].plot(plot_in_market[0], plot_in_market[1], color = 'green', linewidth = 2.5, linestyle = '-')
+        '''
         # upper plot elements
         axes[0].set(title = 'In / Out of Market', xlabel = 'date of close', ylabel = 'close')
         axes[0].set_ylim(self.dict_plot_data.get('y_min', None), self.dict_plot_data.get('y_max', None))
@@ -2409,25 +2426,24 @@ class Sp500Visualizations(Sp500Base):
         # lower plot; 200 day (blue) and 50 day (red) sma
         #--------------------------------------------------------------------------------#
 
-        axes[1].plot(x = self.dict_plot_data.get('x', pandas.Series()),
-            y = self.dict_plot_data.get('y_200_sma', pandas.Series()), color = 'blue', linewidth = 2, linestyle = '-',
+        axes[1].plot(self.dict_plot_data.get('x', pandas.Series()),
+            self.dict_plot_data.get('y_200_sma', pandas.Series()), color = 'blue', linewidth = 2, linestyle = '-',
             label = '200 sma')
-        axes[1].plot(x = self.dict_plot_data.get('x', pandas.Series()),
-            y = self.dict_plot_data.get('y_50_sma', pandas.Series()), color = 'red', linewidth = 2, linestyle = '-',
+        axes[1].plot(self.dict_plot_data.get('x', pandas.Series()),
+            self.dict_plot_data.get('y_50_sma', pandas.Series()), color = 'red', linewidth = 2, linestyle = '-',
             label = '50 sma')
 
         # lower plot elements
         axes[1].set(title = '200 & 50 sma', xlabel = 'date of close', ylabel = 'close')
         axes[1].set_ylim(self.dict_plot_data.get('y_min', None), self.dict_plot_data.get('y_max', None))
-        axes[1].legend(loc = 'best')
 
         #--------------------------------------------------------------------------------#
         # veticle lines on both plots
         #--------------------------------------------------------------------------------#
 
         bool_label_01 = True
-        for x_val in self.dict_plot_data('vertical_lines_false', list()):
-            if bool_label_01 == True:
+        for x_val in self.dict_plot_data.get('vertical_lines_false', list()):
+            if bool_label_01:
                 axes[0].axvline(x_val, color = 'indigo', linewidth = 1, linestyle = '--', 
                     label = 'Trigger to get out')
                 axes[1].axvline(x_val, color = 'indigo', linewidth = 1, linestyle = '--', 
@@ -2439,7 +2455,7 @@ class Sp500Visualizations(Sp500Base):
 
         bool_label_02 = True
         for x_val in self.dict_plot_data.get('vertical_lines_true', list()):
-            if bool_label_02 == True:
+            if bool_label_02:
                 axes[0].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--', 
                     label = 'Trigger to buy in')
                 axes[1].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--', 
@@ -2448,11 +2464,12 @@ class Sp500Visualizations(Sp500Base):
             else:
                 axes[0].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--')
                 axes[1].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--')
-        
+
         #--------------------------------------------------------------------------------#
         # plot elements
         #--------------------------------------------------------------------------------#
 
+        axes[1].legend(loc = 'best')
         pyplot.subplots_adjust(wspace = None, hspace = 0.4)
         pyplot.suptitle('SP500 Analysis')
         pyplot.savefig(os.path.join(self.string_path,  self.string_file))
@@ -2461,104 +2478,4 @@ class Sp500Visualizations(Sp500Base):
         # return value
         #--------------------------------------------------------------------------------#
 
-        return
-
-    def def_Methods(self, list_cluster_results, array_sparse_matrix):
-        '''
-        below is an example of a good method comment
-
-        ---------------------------------------------------------------------------------------------------------------------------------------------------
-
-        this method implements the evauluation criterea for the clusters of each clutering algorithms
-        criterea:
-               - 1/2 of the clusters for each result need to be:
-                   - the average silhouette score of the cluster needs to be higher then the silhouette score of all the clusters
-                     combined
-                   - the standard deviation of the clusters need to be lower than the standard deviation of all the clusters
-                     combined
-               - silhouette value for the dataset must be greater than 0.5
-
-        Requirements:
-        package time
-        package numpy
-        package statistics
-        package sklearn.metrics
-
-        Inputs:
-        list_cluster_results
-        Type: list
-        Desc: the list of parameters for the clustering object
-        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
-                         or dense array
-        list[x][1] -> type: string; the cluster ID with the parameters
-
-        array_sparse_matrix
-        Type: numpy array
-        Desc: a sparse matrix of the samples used for clustering
-
-        Important Info:
-        None
-
-        Return:
-        object
-        Type: list
-        Desc: this of the clusters that meet the evaluation criterea
-        list[x][0] -> type: array; of cluster results by sample in the order of the sample row passed as indicated by the sparse
-                        or dense array
-        list[x][1] -> type: string; the cluster ID with the parameters
-        list[x][2] -> type: float; silhouette average value for the entire set of data
-        list[x][3] -> type: array; 1 dimensional array of silhouette values for each data sample
-        list[x][4] -> type: list; list of lists, the cluster and the average silhoutte value for each cluster, the orders is sorted 
-                            highest to lowest silhoutte value
-                            list[x][4][x][0] -> int; cluster label
-                            list[x][4][x][1] -> float; cluster silhoutte value
-        list[x][5] -> type: list; a list that contains the cluster label and the number of samples in each cluster
-                           list[x][5][x][0] -> int; cluster label
-                           list[x][5][x][1] -> int; number of samples in cluster list[x][5][x][0]
-        '''
-
-        #--------------------------------------------------------------------------------#
-        # objects declarations
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # time declarations
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # lists declarations
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # variables declarations
-        #--------------------------------------------------------------------------------#
-
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # Start
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-
-        #--------------------------------------------------------------------------------#
-        # sub-section comment
-        #--------------------------------------------------------------------------------#
-
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # sectional comment
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-
-        #--------------------------------------------------------------------------------#
-        # variable / object cleanup
-        #--------------------------------------------------------------------------------#
-
-        #--------------------------------------------------------------------------------#
-        # return value
-        #--------------------------------------------------------------------------------#
-
-        return
+        return True
