@@ -20,7 +20,7 @@ from datetime import datetime
 # from datetime import time
 from datetime import timedelta
 # from datetime import timezone
-import fix_yahoo_finance
+# import fix_yahoo_finance
 import numpy
 import os
 from matplotlib import pyplot

@@ -99,7 +99,6 @@ def main_class_test(m_list_user):
     # get data and market status
     #--------------------------------------------------------------------------------#
 
-    '''
     print('\n' + string_check_sql_db)
     bool_db_check = sp_data.check_sql_db()[0]
     if bool_db_check:
@@ -112,13 +111,11 @@ def main_class_test(m_list_user):
         bool_data_results = False
     set_errors.add(bool_db_check)
     set_errors.add(bool_data_results)
-    '''
 
     #--------------------------------------------------------------------------------#
     # conduct analysis
     #--------------------------------------------------------------------------------#
 
-    '''
     if bool_db_check and bool_data_results:
         print('\n' + string_analyze_data)
         bool_analysis = sp_analysis.analysis_wrapper()
@@ -127,7 +124,6 @@ def main_class_test(m_list_user):
     else:
         bool_analysis = False
     set_errors.add(bool_analysis)
-    '''
 
     #--------------------------------------------------------------------------------#
     # create visualization
