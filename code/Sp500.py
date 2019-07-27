@@ -195,6 +195,7 @@ class Sp500Base(object):
 
         string_check_setup = 'checking sql setup for analysis'
         string_sql_good_setup = 'sql database is setup correctly'
+        bool_create_tables = False
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -211,19 +212,19 @@ class Sp500Base(object):
         if self.bool_verbose:
             print(string_check_setup)
         bool_db_check = self._check_sql_db_setup()
-        if tup_db_check[0]:
+        if bool_db_check:
             if self.bool_verbose:
                 print(string_sql_good_setup)
-            tup_return = tup_db_check
+            tup_return = (bool_db_check, '')
         else:
-            tup_return = self._create_sql_db_tables(tup_db_check[1])
-        
-        #--------------------------------------------------------------------------------#
-        # update class tuple for db setup
-        #--------------------------------------------------------------------------------#
-
+            bool_create_tables = self._create_sql_db_tables()
+            if bool_create_tables:
+                string_errors = ''
+            else:
+                string_errors = '||'.join(self.list_errors)
+            tup_return = (bool_create_tables, string_errors)
         self.tup_sql_db_setup = tup_return
-
+                
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
@@ -329,7 +330,6 @@ class Sp500Base(object):
         #--------------------------------------------------------------------------------#
 
         bool_return = False
-        list_errors = list()
         set_bool_return = set()
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
