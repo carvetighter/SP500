@@ -2011,14 +2011,14 @@ class Sp500Visualizations(Sp500Base):
         
         # plot data
         self.dict_plot_data = {
-            'x':None, # pandas.Series
-            'y_sp500':None, # pandas.Series
-            'y_200_sma':None, # pandas.Series
-            'y_50_sma':None, # pandas.Series
+            'x':None, # pandas.Series, datetime
+            'y_sp500':None, # pandas.Series, float
+            'y_200_sma':None, # pandas.Series, float
+            'y_50_sma':None, # pandas.Series, float
             'y_max':None, # float
             'y_min':None, # float
-            'vertical_lines_true':None, # list of datetime
-            'vertical_lines_false':None, # list of datetime
+            'vertical_lines_true':None, # array, datetime
+            'vertical_lines_false':None, # array, datetime
             'in_market':None, # list of lists
         }
 
@@ -2328,10 +2328,8 @@ class Sp500Visualizations(Sp500Base):
             # get the vertical lines for the charts
             #--------------------------------------------------------------------------------#
 
-            series_trigger_false = dataframe_triggers['string_in_market'] == 'False'
-            series_trigger_true = dataframe_triggers['string_in_market'] == 'True'
-            self.dict_plot_data['vertical_lines_false'] = list(dataframe_triggers[series_trigger_false]['date_date'].values)
-            self.dict_plot_data['vertical_lines_true'] = list(dataframe_triggers[series_trigger_true]['date_date'].values)
+            self.dict_plot_data['vertical_lines_false'] = self._trigger_values(dataframe_triggers, 'False').values
+            self.dict_plot_data['vertical_lines_true'] = self._trigger_values(dataframe_triggers, 'True').values
 
         #--------------------------------------------------------------------------------#
         # return value
@@ -2474,3 +2472,36 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         return True
+
+    def _trigger_values(self, m_df_trigger, m_string_value):
+        '''
+        this method formats the data series for the trigger values to a datetime; this is to plot the verticle lines
+        
+        Requirements:
+        package pandas
+        package datetime
+
+        Inputs:
+        m_df_trigger
+        Type: pandas.Dataframe
+        Desc: triggers for in and out of the marker; has all the columns from the database
+
+        m_string_value
+        Type: string
+        Desc: value to test in or out of the market; 'True' or 'False'
+        
+        Important Info:
+        None
+
+        Return:
+        object
+        Type: pandas.Series
+        Desc: datetime values for verticle lines to plot
+        '''
+        
+        series_bool_trigger = m_df[_trigger['string_in_market'] == m_string_value
+        series_values = m_df_trigger['date_date'][series_bool_trigger].apply(
+            lambda x: datetime.strptime(x, '%Y-%m-%d')
+        )
+
+        return series_values
