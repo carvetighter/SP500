@@ -2319,9 +2319,6 @@ class Sp500Visualizations(Sp500Base):
                     ]
                 )
             
-            # debug code
-            list_in_market = list_in_market[:1]
-
             self.dict_plot_data['in_market'] = list_in_market
 
             #--------------------------------------------------------------------------------#
@@ -2393,9 +2390,9 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         # sp500 only (black lines)
-        # axes[0].plot(self.dict_plot_data.get('x', pandas.Series()),
-        #     self.dict_plot_data.get('y_sp500', pandas.Series()), color = 'black', linewidth = 2, linestyle = '-',
-        #     label = 'SP500')
+        axes[0].plot(self.dict_plot_data.get('x', pandas.Series()),
+            self.dict_plot_data.get('y_sp500', pandas.Series()), color = 'black', linewidth = 2, linestyle = '-',
+            label = 'SP500')
 
         # debug code
         list_to_plot = self.dict_plot_data.get('in_market', list())
@@ -2499,7 +2496,7 @@ class Sp500Visualizations(Sp500Base):
         Desc: datetime values for verticle lines to plot
         '''
         
-        series_bool_trigger = m_df[_trigger['string_in_market'] == m_string_value
+        series_bool_trigger = m_df_trigger['string_in_market'] == m_string_value
         series_values = m_df_trigger['date_date'][series_bool_trigger].apply(
             lambda x: datetime.strptime(x, '%Y-%m-%d')
         )
