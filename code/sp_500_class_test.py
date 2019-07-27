@@ -101,7 +101,7 @@ def main_class_test(m_list_user):
 
     '''
     print('\n' + string_check_sql_db)
-    bool_db_check = sp_data.check_sql_db()
+    bool_db_check = sp_data.check_sql_db()[0]
     if bool_db_check:
         print(string_get_sp500_data)
         bool_data_results = sp_data.data_wrapper()
