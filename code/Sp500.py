@@ -2282,11 +2282,6 @@ class Sp500Visualizations(Sp500Base):
             else:
                 int_start = 0
 
-            # if int_start == 1:
-            #     int_loc_01 = index_df_trigger_index[0]
-            #     list_in_market.append([self.df_vis_data['date_date'].iloc[0:int_loc_01 + 1].values,
-            #                                             self.df_vis_data['float_close'].iloc[0:int_loc_01 + 1].values])
-
             #--------------------------------------------------------------------------------#
             # create a list of row numbers in the dataframe to plot the "in"
             # market lines; if the first value in the data is "not in" the market
@@ -2297,19 +2292,14 @@ class Sp500Visualizations(Sp500Base):
             #--------------------------------------------------------------------------------#
 
             for int_index in range(int_start, len(index_df_trigger_index) - 1, 2):
-                # get the indexes from the dataframe_triggers for the self.df_vis_data
                 int_loc_01 = index_df_trigger_index[int_index]
                 int_loc_02 = index_df_trigger_index[int_index + 1]
 
-                # compare the markets status
-                # string_market_status_01 = dataframe_triggers['string_in_market'].iloc[int_index]
-                # string_market_status_02 = dataframe_triggers['string_in_market'].iloc[int_index + 1]
-
-                # check if the market is in
-                # if string_market_status_01 == 'True' and string_market_status_02 == 'False':
                 list_in_market.append(
-                    [self.df_vis_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
-                    self.df_vis_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values]
+                    [
+                        self.dict_plot_data.get('x', pandas.Series()).iloc[int_loc_01:int_loc_02 + 1].values,
+                        self.dict_plot_data.get('y_sp500', pandas.Series()).iloc[int_loc_01:int_loc_02 + 1].values
+                    ]
                 )
 
             #--------------------------------------------------------------------------------#
@@ -2317,16 +2307,21 @@ class Sp500Visualizations(Sp500Base):
             # the dataframe
             #--------------------------------------------------------------------------------#
 
-            if dataframe_triggers['string_in_market'].iloc[ndex_df_trigger_index[-1]] == 'True':
+            if dataframe_triggers['string_in_market'][index_df_trigger_index[-1]] == 'True':
                 # get the last location where the data was in the market
                 int_last_start = index_df_trigger_index[-1]
 
                 # add last element into the market
                 list_in_market.append(
-                    [self.df_vis_data['date_date'].iloc[int_last_start:].values,
-                    self.df_vis_data['float_close'].iloc[int_last_start:].values]
+                    [
+                        self.dict_plot_data.get('x', pandas.Series()).iloc[int_last_start:].values,
+                        self.dict_plot_data.get('y_sp500', pandas.Series()).iloc[int_last_start:].values
+                    ]
                 )
             
+            # debug code
+            list_in_market = list_in_market[:1]
+
             self.dict_plot_data['in_market'] = list_in_market
 
             #--------------------------------------------------------------------------------#
@@ -2400,9 +2395,9 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         # sp500 only (black lines)
-        axes[0].plot(self.dict_plot_data.get('x', pandas.Series()),
-            self.dict_plot_data.get('y_sp500', pandas.Series()), color = 'black', linewidth = 2, linestyle = '-',
-            label = 'SP500')
+        # axes[0].plot(self.dict_plot_data.get('x', pandas.Series()),
+        #     self.dict_plot_data.get('y_sp500', pandas.Series()), color = 'black', linewidth = 2, linestyle = '-',
+        #     label = 'SP500')
 
         # debug code
         list_to_plot = self.dict_plot_data.get('in_market', list())
@@ -2440,7 +2435,7 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------------#
         # veticle lines on both plots
         #--------------------------------------------------------------------------------#
-
+        '''
         bool_label_01 = True
         for x_val in self.dict_plot_data.get('vertical_lines_false', list()):
             if bool_label_01:
@@ -2464,7 +2459,7 @@ class Sp500Visualizations(Sp500Base):
             else:
                 axes[0].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--')
                 axes[1].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--')
-
+        '''
         #--------------------------------------------------------------------------------#
         # plot elements
         #--------------------------------------------------------------------------------#
