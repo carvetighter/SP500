@@ -7,30 +7,27 @@ from Sp500 import Sp500Analysis
 from Sp500 import Sp500Visualizations
 
 def main_class_test(m_list_user):
-    ################################################################################################
-    ################################################################################################
-    #
-    # this is the main method new change another
-    # 
-    # Requirements:
-    # None
-    #
-    # Inputs:
-    # m_list_user
-    # Type: list
-    # Desc: a list of the user name and password for the local sql database
-    # list[0] -> type: raw string; user name
-    # list[1] -> type: raw string; password
-    #  
-    # Important Info:
-    # None
-    #
-    # Return:
-    # None
-    # Type: None
-    # Description: None
-    ###############################################################################################
-    ###############################################################################################
+    '''
+    this is the main method new change another
+    
+    Requirements:
+    None
+    
+    Inputs:
+    m_list_user
+    Type: list
+    Desc: a list of the user name and password for the local sql database
+    list[0] -> type: raw string; user name
+    list[1] -> type: raw string; password
+     
+    Important Info:
+    None
+    
+    Return:
+    None
+    Type: None
+    Description: None
+    '''
 
     #--------------------------------------------------------------------------------#
     # object declarations
@@ -43,8 +40,8 @@ def main_class_test(m_list_user):
         ca_list_sql_up = m_list_user,
         ca_bool_verbose = True)
     sp_visualizations = Sp500Visualizations(
-        ca_list_sql_up = m_list_user,
-        ca_bool_verbose = True)
+        cv_list_sql_up = m_list_user,
+        cv_bool_verbose = True)
 
     #--------------------------------------------------------------------------------#
     # time declarations

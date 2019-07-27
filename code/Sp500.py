@@ -1992,7 +1992,7 @@ class Sp500Visualizations(Sp500Base):
         # sql query attributes
         #--------------------------------------------------------------------------#
 
-        self.string_sql_query_where = '''date_date >= '{date_start}' and date_date <= '{date_stop}''''
+        #self.string_sql_query_where = date_date >= '{date_start}' and date_date <= '{date_stop}'
         self.string_sql_query = self.sql_conn.gen_select_statement(
             m_string_select='*',
             m_string_from=self.dict_sp500_tables.get('data', dict()).get('table_name', None),
@@ -2117,7 +2117,7 @@ class Sp500Visualizations(Sp500Base):
             bool_visualizations = False
         
         if self.bool_verbose and set_bools != {True}:
-            prints('errors are as follows:')
+            print('errors are as follows:')
             print('||'.join(self.list_errors))
             
         #--------------------------------------------------------------------------------#
@@ -2232,7 +2232,7 @@ class Sp500Visualizations(Sp500Base):
         # check dataframe
         #--------------------------------------------------------------------------------#
 
-        if isinstance(self.df_vis_data, pandas.DataFrame) and not sef.df_vis_data.empty:
+        if isinstance(self.df_vis_data, pandas.DataFrame) and not self.df_vis_data.empty:
             bool_vis_proc_data = True
         else:
             bool_vis_proc_data = False
@@ -2318,8 +2318,8 @@ class Sp500Visualizations(Sp500Base):
                 int_loc_01 = index_df_trigger_index[-1]
                 int_loc_02 = dataframe_data.shape[0] - 1
 
-                    # add last element into the market
-                    list_in_market.append([dataframe_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
+                # add last element into the market
+                list_in_market.append([dataframe_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
                                                             dataframe_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
 
             self.dict_plot_data['in_market'] = list_in_market
@@ -2409,11 +2409,11 @@ class Sp500Visualizations(Sp500Base):
         # lower plot; 200 day (blue) and 50 day (red) sma
         #--------------------------------------------------------------------------------#
 
-        axes[1].plot(x = self.dict_plot_data.get('x', pandas.Series(),
-            y = self.dict_plot_data.get('y_200_sma', pandas.Sereis(), color = 'blue', linewidth = 2, linestyle = '-',
+        axes[1].plot(x = self.dict_plot_data.get('x', pandas.Series()),
+            y = self.dict_plot_data.get('y_200_sma', pandas.Series()), color = 'blue', linewidth = 2, linestyle = '-',
             label = '200 sma')
-        axes[1].plot(x = self.dict_plot_data('x', pandas.Series(),
-            y = self.dict_plot_data('y_50_sma', pandas.Series(), color = 'red', linewidth = 2, linestyle = '-',
+        axes[1].plot(x = self.dict_plot_data.get('x', pandas.Series()),
+            y = self.dict_plot_data.get('y_50_sma', pandas.Series()), color = 'red', linewidth = 2, linestyle = '-',
             label = '50 sma')
 
         # lower plot elements
