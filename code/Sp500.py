@@ -2430,7 +2430,7 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------------#
         # veticle lines on both plots
         #--------------------------------------------------------------------------------#
-        '''
+
         bool_label_01 = True
         for x_val in self.dict_plot_data.get('vertical_lines_false', list()):
             if bool_label_01:
@@ -2454,7 +2454,7 @@ class Sp500Visualizations(Sp500Base):
             else:
                 axes[0].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--')
                 axes[1].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--')
-        '''
+
         #--------------------------------------------------------------------------------#
         # plot elements
         #--------------------------------------------------------------------------------#
