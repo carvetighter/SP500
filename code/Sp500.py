@@ -2282,35 +2282,52 @@ class Sp500Visualizations(Sp500Base):
             else:
                 int_start = 0
 
+            # if int_start == 1:
+            #     int_loc_01 = index_df_trigger_index[0]
+            #     list_in_market.append([self.df_vis_data['date_date'].iloc[0:int_loc_01 + 1].values,
+            #                                             self.df_vis_data['float_close'].iloc[0:int_loc_01 + 1].values])
+
             #--------------------------------------------------------------------------------#
-            # create a list of row numbers in the dataframe to plot the in
-            # market lines; if the first value in the data is not in the market
+            # create a list of row numbers in the dataframe to plot the "in"
+            # market lines; if the first value in the data is "not in" the market
             # in the trigger dataframe get the index for the dataframe
-            #--------------------------------------------------------------------------------#
-
-            if int_start == 1:
-                int_loc_01 = index_df_trigger_index[0]
-                list_in_market.append([self.df_vis_data['date_date'].iloc[0:int_loc_01 + 1].values,
-                                                        self.df_vis_data['float_close'].iloc[0:int_loc_01 + 1].values])
-
-            #--------------------------------------------------------------------------------#
+            # 
             # loop through the dataframe of triggers to get the values for
             # the in market for the plot
             #--------------------------------------------------------------------------------#
 
-            for int_index in range(int_start, len(index_df_trigger_index) - 1):
+            for int_index in range(int_start, len(index_df_trigger_index) - 1, 2):
                 # get the indexes from the dataframe_triggers for the self.df_vis_data
                 int_loc_01 = index_df_trigger_index[int_index]
                 int_loc_02 = index_df_trigger_index[int_index + 1]
 
                 # compare the markets status
-                string_market_status_01 = dataframe_triggers['string_in_market'].iloc[int_index]
-                string_market_status_02 = dataframe_triggers['string_in_market'].iloc[int_index + 1]
+                # string_market_status_01 = dataframe_triggers['string_in_market'].iloc[int_index]
+                # string_market_status_02 = dataframe_triggers['string_in_market'].iloc[int_index + 1]
 
                 # check if the market is in
-                if string_market_status_01 == 'True' and string_market_status_02 == 'False':
-                    list_in_market.append([self.df_vis_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
-                                                            self.df_vis_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
+                # if string_market_status_01 == 'True' and string_market_status_02 == 'False':
+                list_in_market.append(
+                    [self.df_vis_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
+                    self.df_vis_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values]
+                )
+
+            #--------------------------------------------------------------------------------#
+            # check the last value, if true then add to the end of
+            # the dataframe
+            #--------------------------------------------------------------------------------#
+
+            if dataframe_triggers['string_in_market'].iloc[ndex_df_trigger_index[-1]] == 'True':
+                # get the last location where the data was in the market
+                int_last_start = index_df_trigger_index[-1]
+
+                # add last element into the market
+                list_in_market.append(
+                    [self.df_vis_data['date_date'].iloc[int_last_start:].values,
+                    self.df_vis_data['float_close'].iloc[int_last_start:].values]
+                )
+            
+            self.dict_plot_data['in_market'] = list_in_market
 
             #--------------------------------------------------------------------------------#
             # get the vertical lines for the charts
@@ -2320,22 +2337,6 @@ class Sp500Visualizations(Sp500Base):
             series_trigger_true = dataframe_triggers['string_in_market'] == 'True'
             self.dict_plot_data['vertical_lines_false'] = list(dataframe_triggers[series_trigger_false]['date_date'].values)
             self.dict_plot_data['vertical_lines_true'] = list(dataframe_triggers[series_trigger_true]['date_date'].values)
-
-            #--------------------------------------------------------------------------------#
-            # check the last value, if true then add to the end of
-            # the dataframe
-            #--------------------------------------------------------------------------------#
-
-            if dataframe_triggers['string_in_market'].iloc[len(index_df_trigger_index) - 1] == 'True':
-                # get the last two locations
-                int_loc_01 = index_df_trigger_index[-1]
-                int_loc_02 = self.df_vis_data.shape[0] - 1
-
-                # add last element into the market
-                list_in_market.append([self.df_vis_data['date_date'].iloc[int_loc_01:int_loc_02 + 1].values,
-                                                            self.df_vis_data['float_close'].iloc[int_loc_01:int_loc_02 + 1].values])
-            
-            self.dict_plot_data['in_market'] = list_in_market
 
         #--------------------------------------------------------------------------------#
         # return value
