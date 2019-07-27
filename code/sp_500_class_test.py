@@ -55,7 +55,7 @@ def main_class_test(m_list_user):
     #--------------------------------------------------------------------------------#
 
     list_errors = list()
-    bool_return = False
+    set_errors = set()
     
     #--------------------------------------------------------------------------------#
     # variables declarations
@@ -102,38 +102,64 @@ def main_class_test(m_list_user):
     # get data and market status
     #--------------------------------------------------------------------------------#
 
+    '''
     print('\n' + string_check_sql_db)
     bool_db_check = sp_data.check_sql_db()
     if bool_db_check:
         print(string_get_sp500_data)
         bool_data_results = sp_data.data_wrapper()
+        if not bool_data_results:
+            list_errors.extend(sp_data.list_errors)
     else:
         list_errors.extend(sp_data.list_errors)
         bool_data_results = False
-        
+    set_errors.add(bool_db_check)
+    set_errors.add(bool_data_results)
+    '''
 
     #--------------------------------------------------------------------------------#
     # conduct analysis
     #--------------------------------------------------------------------------------#
 
+    '''
     print('\n' + string_analyze_data)
-    if bool_db_check:
+    if bool_db_check and bool_data_results:
         print('\n' + string_analyze_data)
         bool_analysis = sp_analysis.analysis_wrapper()
+        if not bool_analysis:
+            list_errors.extend(sp_analysis.list_errors)
     else:
-        list_errors.extend(sp_analysis.list_errors)
         bool_analysis = False
+    set_errors.add(bool_analysis)
+    '''
 
     #--------------------------------------------------------------------------------#
     # create visualization
     #--------------------------------------------------------------------------------#
 
-    print('\n' + string_plotting_data)
+    # debug code
+    bool_db_check = True
+    bool_data_results = True
 
-    # CreateVisualization(datetime_start, datetime_stop, m_list_user)
+    print('\n' + string_plotting_data)
+    if bool_db_check and bool_data_results:
+        print('\n' + string_plotting_data)
+        bool_visualizations = sp_visualizations.visualization_wrapper()
+        if not bool_visualizations:
+            list_errors.extend(sp_visualizations.list_errors)
+    else:
+        bool_visualizations = False
+    set_errors.add(bool_visualizations)
 
     #--------------------------------------------------------------------------------#
     # errors
+    #--------------------------------------------------------------------------------#
+
+    if set_errors != {True}:
+        print('||'.join(list_errors))
+    
+    #--------------------------------------------------------------------------------#
+    # return
     #--------------------------------------------------------------------------------#
 
     return

@@ -1927,6 +1927,7 @@ class Sp500Analysis(Sp500Base):
 
 class Sp500Visualizations(Sp500Base):
     '''
+    class documentation....
     '''
 
     def __init__(self, cv_list_sql_up, cv_bool_verbose):
@@ -2100,9 +2101,11 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         if bool_process_vis_data:
+            print('generateing visualization')
             bool_create_plots = self._create_plots()
         else:
             bool_create_plots = False
+        set_bools.add(bool_create_plots)
 
         #--------------------------------------------------------------------------------#
         # booleans
@@ -2335,6 +2338,7 @@ class Sp500Visualizations(Sp500Base):
         package matplotlib.pyplot
         package pandas
         package numpy
+        package os
 
         Inputs:
         None
@@ -2353,6 +2357,9 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------------#
         # objects declarations
         #--------------------------------------------------------------------------------#
+
+        fig, axes = pyplot.subplots(2, 1) # one figure with two plots (2 rows, 1 column)
+        fig.set_size_inches(10., 7.)  #  10 inches width, 7 inches high
 
         #--------------------------------------------------------------------------------#
         # time declarations
@@ -2375,20 +2382,80 @@ class Sp500Visualizations(Sp500Base):
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
         #--------------------------------------------------------------------------------#
-        # sub-section comment
+        # upper plot
         #--------------------------------------------------------------------------------#
 
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #
-        # sectional comment
-        #
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+        # sp500 only (black lines)
+        axes[0].plot(x = self.dict_plot_data.get('x', pandas.Series()),
+            y = self.dict_plot_data.get('y_sp500', pandas.Series()), color = 'black', linewidth = 2, linestyle = '-',
+            label = 'SP500')
+        
+        # when in the market (green lines)
+        bool_label = True
+        for plot_in_market in self.dict_plot_data.get('in_market', list()):
+            if bool_label == True:
+                bool_label = False
+                axes[0].plot(x = plot_in_market[0], y = plot_in_market[1], color = 'green', linewidth = 2.5, linestyle = '-',
+                    label = 'In Market')
+            else:
+                axes[0].plot(x = plot_in_market[0], y  = plot_in_market[1], color = 'green', linewidth = 2.5, linestyle = '-')
+        
+        # upper plot elements
+        axes[0].set(title = 'In / Out of Market', xlabel = 'date of close', ylabel = 'close')
+        axes[0].set_ylim(self.dict_plot_data.get('y_min', None), self.dict_plot_data.get('y_max', None))
+        axes[0].legend(loc = 'best')
 
         #--------------------------------------------------------------------------------#
-        # variable / object cleanup
+        # lower plot; 200 day (blue) and 50 day (red) sma
         #--------------------------------------------------------------------------------#
+
+        axes[1].plot(x = self.dict_plot_data.get('x', pandas.Series(),
+            y = self.dict_plot_data.get('y_200_sma', pandas.Sereis(), color = 'blue', linewidth = 2, linestyle = '-',
+            label = '200 sma')
+        axes[1].plot(x = self.dict_plot_data('x', pandas.Series(),
+            y = self.dict_plot_data('y_50_sma', pandas.Series(), color = 'red', linewidth = 2, linestyle = '-',
+            label = '50 sma')
+
+        # lower plot elements
+        axes[1].set(title = '200 & 50 sma', xlabel = 'date of close', ylabel = 'close')
+        axes[1].set_ylim(self.dict_plot_data.get('y_min', None), self.dict_plot_data.get('y_max', None))
+        axes[1].legend(loc = 'best')
+
+        #--------------------------------------------------------------------------------#
+        # veticle lines on both plots
+        #--------------------------------------------------------------------------------#
+
+        bool_label_01 = True
+        for x_val in self.dict_plot_data('vertical_lines_false', list()):
+            if bool_label_01 == True:
+                axes[0].axvline(x_val, color = 'indigo', linewidth = 1, linestyle = '--', 
+                    label = 'Trigger to get out')
+                axes[1].axvline(x_val, color = 'indigo', linewidth = 1, linestyle = '--', 
+                    label = 'Trigger to get out')
+                bool_label_01 = False
+            else:
+                axes[0].axvline(x_val, color = 'indigo', linewidth = 1, linestyle = '--')
+                axes[1].axvline(x_val, color = 'indigo', linewidth = 1, linestyle = '--')
+
+        bool_label_02 = True
+        for x_val in self.dict_plot_data.get('vertical_lines_true', list()):
+            if bool_label_02 == True:
+                axes[0].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--', 
+                    label = 'Trigger to buy in')
+                axes[1].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--', 
+                    label = 'Trigger to buy in')
+                bool_label_02 = False
+            else:
+                axes[0].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--')
+                axes[1].axvline(x_val, color = 'orangered', linewidth = 1, linestyle = '--')
+        
+        #--------------------------------------------------------------------------------#
+        # plot elements
+        #--------------------------------------------------------------------------------#
+
+        pyplot.subplots_adjust(wspace = None, hspace = 0.4)
+        pyplot.suptitle('SP500 Analysis')
+        pyplot.savefig(os.path.join(self.string_path,  self.string_file))
 
         #--------------------------------------------------------------------------------#
         # return value
