@@ -6,6 +6,7 @@ This analysis pulls data for the SP500 (since inception) and conducts a moving a
 - SQL Server Database locally (install prior to running script)
 - internet connection (to get the SP500)
 - Anaconda Python distribuiton
+- you will have to modify the code access the SQL Server database and tables; this can be done in the base class
 
 # Running the python script
 1. download / pull the repo
@@ -39,3 +40,14 @@ if __name__ == '__main__':
     list_sql_up = [r'<sql_server_user_name>', r'<password>']
     main_class(list_sql_up)
 ```
+
+## Example Image
+<img src='visualizations/sp500_visualization_2019-07-27 21_29_43.png'>
+
+## Performance
+start date -> 01 January 1995\
+end date -> 26 July 2019\
+start amount -> $3,000\
+end date status -> In the Market\
+buy and hold result -> $19,772\
+this method results -> $24,028\
