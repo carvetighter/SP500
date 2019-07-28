@@ -18,9 +18,9 @@ Sp500 visualizations class -> conducts the visualizations of the analysis
 
 from datetime import datetime
 from datetime import timedelta
+import os
 import pandas
 import numpy
-import os
 from matplotlib import pyplot
 from matplotlib import style
 from SqlMethods import SqlMethods
