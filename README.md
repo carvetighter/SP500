@@ -45,9 +45,9 @@ if __name__ == '__main__':
 <img src='visualizations/sp500_visualization_2019-07-27 21_29_43.png'>
 
 ## Performance
-start date -> 01 January 1995
-end date -> 26 July 2019
-start amount -> $3,000
-end date status -> In the Market
-buy and hold result -> $19,772
-this method results -> $24,028
+start date -> 01 January 1995\
+end date -> 26 July 2019\
+start amount -> $3,000\
+end date status -> In the Market\
+buy and hold result -> $19,772\
+this method results -> $24,028\
