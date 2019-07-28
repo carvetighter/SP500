@@ -50,4 +50,4 @@ end date -> 26 July 2019\
 start amount -> $3,000\
 end date status -> In the Market\
 buy and hold result -> $19,772\
-this method results -> $24,028\
+this method results -> $24,028
