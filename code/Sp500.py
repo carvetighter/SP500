@@ -47,7 +47,21 @@ class Sp500Base(object):
           in the constructor
 
     Attributes:
-    ??
+    sql_conn
+        - the connection to the sql server
+
+    dict_sp500_tables
+        - the table mapings and columns for the sql server
+    
+    string_sym_sp500
+        - symbol used for the sp500
+        - '^SPX'
+
+    dt_sp500_start
+        - start date if not changed
+    
+    dt_sp500_stop
+        - stop date
     '''
 
     #--------------------------------------------------------------------------#
