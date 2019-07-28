@@ -129,10 +129,6 @@ def main_class_test(m_list_user):
     # create visualization
     #--------------------------------------------------------------------------------#
 
-    # debug code
-    bool_db_check = True
-    bool_data_results = True
-
     if bool_db_check and bool_data_results:
         print('\n' + string_plotting_data)
         bool_visualizations = sp_visualizations.visualization_wrapper()
