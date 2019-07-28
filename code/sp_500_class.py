@@ -6,7 +6,7 @@ from Sp500 import Sp500Data
 from Sp500 import Sp500Analysis
 from Sp500 import Sp500Visualizations
 
-def main_class_test(m_list_user):
+def main_class(m_list_user):
     '''
     this is the main method new change another
     
