@@ -17,10 +17,8 @@ Sp500 visualizations class -> conducts the visualizations of the analysis
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
 from datetime import datetime
-# from datetime import time
 from datetime import timedelta
-# from datetime import timezone
-# import fix_yahoo_finance
+import pandas
 import numpy
 import os
 from matplotlib import pyplot
@@ -28,10 +26,8 @@ from matplotlib import style
 from SqlMethods import SqlMethods
 
 # fix for is_list_like error
-import pandas
 pandas.core.common.is_list_like = pandas.api.types.is_list_like
 from pandas_datareader import data
-# import pandas_datareader
 
 # ignore warnings
 import warnings
@@ -1473,6 +1469,13 @@ class Sp500Data(Sp500Base):
         self.df_metrics = self.df_metrics[self.list_columns]
 
         #--------------------------------------------------------------------------------#
+        # replace nans with 'None"
+        #--------------------------------------------------------------------------------#
+
+        self.df_metrics = self.df_metrics.fillna(value = 'None')
+        self.df_metrics = self.df_metrics.astype(str)
+        
+        #--------------------------------------------------------------------------------#
         # get insert information for sql database
         #--------------------------------------------------------------------------------#
 
@@ -1483,6 +1486,7 @@ class Sp500Data(Sp500Base):
 
         if not list_insert_results[0]:
             self.list_errors.append(list_insert_results[1])
+        
         #--------------------------------------------------------------------------------#
         # return value
         #--------------------------------------------------------------------------------#
