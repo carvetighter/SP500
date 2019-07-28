@@ -39,3 +39,6 @@ if __name__ == '__main__':
     list_sql_up = [r'<sql_server_user_name>', r'<password>']
     main_class(list_sql_up)
 ```
+
+## Example Image
+<img src='visualizations/sp500_visualization_2019-07-27 21_29_43.png'>
