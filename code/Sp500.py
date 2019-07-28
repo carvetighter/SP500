@@ -1052,8 +1052,7 @@ class Sp500Data(Sp500Base):
         # time declarations
         #--------------------------------------------------------------------------------#
 
-        dt_query_date = self.dt_sp500_start - timedelta(days = 201)
-        string_query_date = dt_query_date.strftime('%Y-%m-%d')
+        string_query_date = self.dt_sp500_start.strftime('%Y-%m-%d')
 
         #--------------------------------------------------------------------------------#
         # lists declarations
@@ -1065,9 +1064,9 @@ class Sp500Data(Sp500Base):
 
         bool_return = False
         string_200_query_temp = '''
-            select top(200) *
-            from {0}
-            where date_date <= '{1}'
+            select top(201) *
+            from {table}
+            where date_date <= '{date}'
             order by date_date desc'''
 
         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
@@ -1083,8 +1082,8 @@ class Sp500Data(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         string_query = string_200_query_temp.format(
-            self.string_table,
-            string_query_date)
+            table = self.string_table,
+            date = string_query_date)
         list_data = self.sql_conn.query_select(string_query)
 
         #--------------------------------------------------------------------------------#
