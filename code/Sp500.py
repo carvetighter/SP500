@@ -2449,7 +2449,7 @@ class Sp500Visualizations(Sp500Base):
             label = 'SP500')
 
         # when in the market (green lines)
-        for plot_in_market in list_to_plot:
+        for plot_in_market in self.dict_plot_data.get('in_market', list()):
             bool_label = True
             if bool_label:
                 bool_label = False
