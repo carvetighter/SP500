@@ -42,7 +42,7 @@ if __name__ == '__main__':
 ```
 
 ## Example Image
-<img src='visualizations/sp500_visualization_2019-07-27 21_29_43.png'>
+<img src='visualizations/sp500_visualization_2019-07-29 20_27_14.png'>
 
 ## Performance
 start date -> 01 January 1995\
