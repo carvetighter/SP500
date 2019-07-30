@@ -2316,7 +2316,7 @@ class Sp500Visualizations(Sp500Base):
             for int_index in range(int_start, len(index_df_trigger_index) - 1, 2):
                 int_loc_01 = index_df_trigger_index[int_index]
                 int_loc_02 = index_df_trigger_index[int_index + 1]
-                list_in_market = self._pvd_plot_in_market(int_loc_01, int_loc_02, list_in_market)
+                list_in_market = self. _pvd_plot_in_market(int_loc_01, int_loc_02, list_in_market)
 
             #--------------------------------------------------------------------------------#
             # check the last value, if true then add to the end of
@@ -2350,7 +2350,7 @@ class Sp500Visualizations(Sp500Base):
 
         return bool_vis_proc_data
 
-    def _pvd_plot_in_market(m_int_index_start, m_int_index_stop, m_list_in_market = list()):
+    def _pvd_plot_in_market(self, m_int_index_start, m_int_index_stop, m_list_in_market = list()):
         '''
         this method returns a list with the data to plot if in the market
 
