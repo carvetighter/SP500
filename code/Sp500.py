@@ -2294,7 +2294,7 @@ class Sp500Visualizations(Sp500Base):
             # to ensure it is in In the market
             #--------------------------------------------------------------------------------#
 
-            if df_vis_data['string_in_market'].iloc[0] == 'True':
+            if self.df_vis_data['string_in_market'].iloc[0] == 'True':
                 int_start = 1
             else:
                 int_start = 0
