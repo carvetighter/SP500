@@ -2311,12 +2311,12 @@ class Sp500Visualizations(Sp500Base):
             if int_start:
                 int_loc_01 = 0
                 int_loc_02 = index_df_trigger_index[0]
-                list_in_market = _pvd_plot_in_market(int_loc_01, int_loc_02)
+                list_in_market = self._pvd_plot_in_market(int_loc_01, int_loc_02)
 
             for int_index in range(int_start, len(index_df_trigger_index) - 1, 2):
                 int_loc_01 = index_df_trigger_index[int_index]
                 int_loc_02 = index_df_trigger_index[int_index + 1]
-                list_in_market = _pvd_plot_in_market(int_loc_01, int_loc_02, list_in_market)
+                list_in_market = self._pvd_plot_in_market(int_loc_01, int_loc_02, list_in_market)
 
             #--------------------------------------------------------------------------------#
             # check the last value, if true then add to the end of
