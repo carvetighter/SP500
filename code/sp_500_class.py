@@ -124,11 +124,14 @@ def main_class(m_list_user):
     else:
         bool_analysis = False
     set_errors.add(bool_analysis)
+    
 
     #--------------------------------------------------------------------------------#
     # create visualization
     #--------------------------------------------------------------------------------#
 
+    bool_db_check = True
+    bool_data_results = True
     if bool_db_check and bool_data_results:
         print('\n' + string_plotting_data)
         bool_visualizations = sp_visualizations.visualization_wrapper()

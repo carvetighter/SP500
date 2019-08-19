@@ -149,6 +149,8 @@ class Sp500Base(object):
 
         self.bool_verbose = c_bool_verbose
         self.list_errors = list()
+        self.string_path_base = os.path.join('c:', 'Code', 'Development', 'Python',
+            'Finance', 'sp_500')
 
     #--------------------------------------------------------------------------#
     # callable methods
@@ -2023,7 +2025,7 @@ class Sp500Visualizations(Sp500Base):
         #--------------------------------------------------------------------------#
 
         # path variables
-        self.string_path = os.path.join(os.path.abspath('../'), 'visualizations')
+        self.string_path = os.path.join(self.string_path_base, 'visualizations')
         self.string_file = 'sp500_visualization_'  + self.datetime_stop.strftime('%Y-%m-%d %H_%M_%S') + '.png'
         
         # plot data
