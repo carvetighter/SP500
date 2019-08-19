@@ -149,8 +149,7 @@ class Sp500Base(object):
 
         self.bool_verbose = c_bool_verbose
         self.list_errors = list()
-        self.string_path_base = os.path.join('c:', 'Code', 'Development', 'Python',
-            'Finance', 'sp_500')
+        self.string_path_base = os.path.join('c:' + os.path.sep, 'Code', 'Prod', 'Sp500')
 
     #--------------------------------------------------------------------------#
     # callable methods
