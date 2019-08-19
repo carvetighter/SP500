@@ -2028,6 +2028,9 @@ class Sp500Visualizations(Sp500Base):
         self.string_path = os.path.join(self.string_path_base, 'visualizations')
         self.string_file = 'sp500_visualization_'  + self.datetime_stop.strftime('%Y-%m-%d %H_%M_%S') + '.png'
         
+        # debug code
+        print(self.string_path)
+        
         # plot data
         self.dict_plot_data = {
             'x':None, # pandas.Series, datetime
