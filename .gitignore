@@ -3,9 +3,10 @@
 
 # directories to ignore
 code/__pycache__
+**visualizations**
 
-# Main file w/ username and passwords
-code/sp_500_init.py
+# config file
+sp_500_config.json
 
 # User-specific files
 *.suo

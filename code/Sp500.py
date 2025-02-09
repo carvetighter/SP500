@@ -23,11 +23,7 @@ import pandas
 import numpy
 from matplotlib import pyplot
 from matplotlib import style
-from SqlMethods import SqlMethods
 
-# fix for is_list_like error
-pandas.core.common.is_list_like = pandas.api.types.is_list_like
-from pandas_datareader import data
 
 # ignore warnings
 import warnings
@@ -621,6 +617,7 @@ class Sp500Base(object):
         #--------------------------------------------------------------------------#
 
         return m_pandas_series
+
 
 class Sp500Data(Sp500Base):
     '''
@@ -1507,6 +1504,7 @@ class Sp500Data(Sp500Base):
 
         return list_insert_results[0]
 
+
 class Sp500Analysis(Sp500Base):
     '''
     This class connects to an external data source and pulls the sp500 data,
@@ -1940,6 +1938,7 @@ class Sp500Analysis(Sp500Base):
         #--------------------------------------------------------------------------------#
 
         return bool_return
+
 
 class Sp500Visualizations(Sp500Base):
     '''
