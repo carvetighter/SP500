@@ -4,6 +4,7 @@
 # directories to ignore
 code/__pycache__
 **visualizations**
+data
 
 # config file
 sp_500_config.json

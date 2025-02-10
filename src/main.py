@@ -60,16 +60,15 @@ supportive functions
 callable functions
 '''
 
-def get_data_file() -> pandas.DataFrame:
+def get_data_file(path_file:str) -> pandas.DataFrame:
     '''
     get any existing data
 
-    :param: None
+    :param str path_file: path and file name of data
     :return: any data from the file
     :rtype: pandas.DataFrame
     '''
     # setup
-    path_file = '../data/data.parquet'
     data = pandas.DataFrame()
 
     try:
@@ -170,20 +169,85 @@ def in_out(data:pandas.DataFrame) -> pandas.DataFrame:
 
 def calc_balances(data:pandas.DataFrame, start_balance:float) -> pandas.DataFrame:
     '''
+    calculate the new balances and returns
+
+    :param pandas.DataFrame data: data for calculation
+    :param float start_balance: start balance
+    :return: data w/ new columns
+    :rtype: pandas.DataFrame
     '''
     # setup
     col_balance = 'balance'
+    col_close = 'close'
+    col_open = 'open'
+    col_in_out = 'in_out'
+    set_columns = set(data.columns)
+    calc_balances, calc_idx = list(), list()
 
     # start row
-    if col_balance in data.columns:
-        start_row = data[data[col_balance].isnull()].index[0]
+    if col_balance in set_columns:
+        existing_data = True
+        filtered_data = data[data[col_balance].isnull()]
+        start_row = filtered_data.index[0]
+        start_loc = data.index.get_loc(key = start_row)
+        balance = data[col_balance].iloc[start_loc - 1]
+        prev_close = data[col_close].iloc[start_loc - 1]
     else:
+        existing_data = False
         start_row = data.index[0]
+        balance = start_balance
+        prev_close = data[col_open].iloc[0]
     
-    # filter data
-    data_for_calc = data.loc[start_row:]
+    # iterate through rows
+    for idx, row in data.loc[start_row:].iterrows():
+        # get data
+        current_close = row[col_close]
+        gain_loss = current_close / prev_close
 
-    return None
+        # new balance if in
+        if row[col_in_out]:
+            new_balance = gain_loss * balance
+        else:
+            new_balance = balance
+        
+        # update lists
+        calc_idx.append(idx)
+        calc_balances.append(new_balance)
+        
+        # update
+        prev_close = current_close
+        balance = new_balance
+    
+    # create new data
+    series_balance = pandas.Series(
+        data = calc_balances,
+        index = calc_idx,
+        name = col_balance
+    )
+
+    # add to existing data
+    if existing_data:
+        series_balance = pandas.concat([data[col_balance], series_balance])
+    data = data.assign(**{col_balance: series_balance.tolist()})
+
+    # calc returns
+    col_sp500_return = 'sp500_return'
+    col_return = 'return'
+    sp_500_start = data[col_close].iloc[0]
+    balance_start = data[col_balance].iloc[0]
+    series_sp500_return = data[col_close].apply(lambda x: (x / sp_500_start) - 1.)
+    series_return = data[col_balance].apply(lambda x: (x / balance_start) - 1.)
+    for column in [col_sp500_return, col_return]:
+        if column in data.columns:
+            data = data.drop(columns = [col_sp500_return])
+    data = data.assign(
+        **{
+            col_sp500_return: series_sp500_return.tolist(),
+            col_return: series_return.tolist()
+        }
+    )
+
+    return data
 
 '''
 main
@@ -193,17 +257,29 @@ def main():
     '''
     main function for SP500 analysis
     '''
+    # setup
+    data_path_file = '../data/data.parquet'
 
     # get data
-    df_file_data = get_data_file()
+    logger.info('start get data')
+    df_file_data = get_data_file(path_file = data_path_file)
     dt_start, dt_end = get_query_dates(data = df_file_data)
     df_api_data = get_data_from_api(start = dt_start, end = dt_end)
     df_data = pandas.concat([df_file_data, df_api_data])
     df_data = df_data.sort_index(ascending = False)
+    logger.info('finished getting data')
+
+    # save data
+    logger.info('start save raw data')
+    df_data.to_parquet(path = data_path_file)
+    logger.info('finished save raw data')
 
     # conduct analysis of the data
+    logger.info('start caclulations')
     df_data = ema_calculations(data = df_data)
     df_data = in_out(data = df_data)
+    df_data = calc_balances(data = df_data, start_balance = 10000.)
+    logger.info('finished caclulations')
 
 
 
