@@ -29,7 +29,7 @@ logger
 
 import logging
 logger = logging.getLogger()
-str_dt_now = datetime.now().strftime(DATETIME_CONV)
+str_dt_now = datetime.now().strftime(LOG_DATETIME)
 log_file = f'sp_500_{str_dt_now}.log'
 log_path = '../logs'
 set_up_logger(
@@ -259,6 +259,7 @@ def main():
     '''
     # setup
     data_path_file = '../data/data.parquet'
+    start_balance = 10000.
 
     # get data
     logger.info('start get data')
@@ -266,22 +267,26 @@ def main():
     dt_start, dt_end = get_query_dates(data = df_file_data)
     df_api_data = get_data_from_api(start = dt_start, end = dt_end)
     df_data = pandas.concat([df_file_data, df_api_data])
-    df_data = df_data.sort_index(ascending = False)
+    df_data = df_data.sort_index(ascending = True)
     logger.info('finished getting data')
 
     # save data
     logger.info('start save raw data')
-    df_data.to_parquet(path = data_path_file)
+    # df_data.to_parquet(path = data_path_file)
     logger.info('finished save raw data')
 
     # conduct analysis of the data
     logger.info('start caclulations')
     df_data = ema_calculations(data = df_data)
     df_data = in_out(data = df_data)
-    df_data = calc_balances(data = df_data, start_balance = 10000.)
+    df_data = calc_balances(data = df_data, start_balance = start_balance)
     logger.info('finished caclulations')
 
-
+    # debug
+    columns = ['in_out', 'balance', 'sp500_return', 'return']
+    print(df_data.info())
+    print(df_data.iloc[195:205][columns])
+    print(df_data.iloc[-10:][columns])
 
     return None
 
