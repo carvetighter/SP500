@@ -2,9 +2,9 @@
 this is the main method to test the Sp500 class
 '''
 
-from Sp500 import Sp500Data
-from Sp500 import Sp500Analysis
-from Sp500 import Sp500Visualizations
+from src.archive.Sp500 import Sp500Data
+from src.archive.Sp500 import Sp500Analysis
+from src.archive.Sp500 import Sp500Visualizations
 
 def main_class(m_list_user):
     '''
