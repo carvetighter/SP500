@@ -3,6 +3,13 @@
 '''
 
 '''
+warnings
+'''
+
+import warnings
+warnings.simplefilter('ignore')
+
+'''
 packages
 '''
 
@@ -10,6 +17,7 @@ import json
 import pandas
 import pytz
 import requests
+from matplotlib import pyplot
 
 from datetime import datetime, timedelta
 from enum import Flag, auto
@@ -383,7 +391,6 @@ def calc_balances(data:pandas.DataFrame, start_balance:float) -> Tuple[pandas.Da
 
     return data, new_idx_buys, new_idx_sells
 
-
 '''
 main
 '''
@@ -394,6 +401,7 @@ def main():
     '''
     # setup
     data_path_file = r'c:\Code\Prod\Sp500\data\data.parquet'
+    results_path_file = r'c:\Code\Prod\Sp500\data\results.parquet'
     token_file_name = r'c:\Code\Prod\Sp500\src\sp_500_config.json'
     token_key_name = 'tiingo_key'
     start_balance = 10000.
@@ -426,6 +434,11 @@ def main():
     df_data, buys, sells = calc_balances(data = df_data, start_balance = start_balance)
     logger.info('finished caclulations')
 
+    # save data
+    logger.info('save results')
+    df_data.to_parquet(path = results_path_file)
+    logger.info('finished saving results')
+
     # debug
     columns = ['in_out', 'perc_change', 'num_shares', 'balance']
     # print(df_data.info())
@@ -434,6 +447,13 @@ def main():
     print(df_data.iloc[-10:][columns], '\n')
     print(df_data.iloc[-1]['balance'])
     # print(df_data['change'].dropna())
+
+    fig, ax = pyplot.subplots(1, 1)
+    ax.plot(
+        [x for x in range(0, len(df_data))],
+        df_data['balance']
+    )
+    fig.savefig(r'c:\Code\Prod\Sp500\plot.png')
 
     return None
 
