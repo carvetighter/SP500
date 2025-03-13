@@ -502,6 +502,10 @@ def main():
     token_file_name = Path('.', 'sp_500_config.json')
     token_key_name = 'tiingo_key'
     start_balance = 10000.
+    
+    # start date for analysis
+    # start_date = datetime(year = 1999, month = 1, day = 1, tzinfo = pytz.UTC)
+    start_date = None
 
     # get tokens
     logger.info('getting tokens')
@@ -521,6 +525,17 @@ def main():
     logger.info('start save raw data')
     df_data.to_parquet(path = data_path_file)
     logger.info('finished save raw data')
+
+    # sort data
+    if start_date is not None:
+        logger.info(f'filter data to start date')
+        idx_series = df_data.index.to_series()
+        filter_start_date = idx_series[idx_series <= start_date].iloc[-1]
+        idx_loc = df_data.index.get_loc(filter_start_date) - 200
+        if idx_loc < 0:
+            idx_loc = 0
+        df_data = df_data.iloc[idx_loc:]
+        logger.info(f'finished filtering data to start date')
 
     # conduct analysis of the data
     logger.info('start caclulations')
