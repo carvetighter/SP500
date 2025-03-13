@@ -17,8 +17,11 @@ import json
 import pandas
 import pytz
 import requests
-from matplotlib import pyplot
 
+from matplotlib import pyplot
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+from pathlib import Path
 from datetime import datetime, timedelta
 from enum import Flag, auto
 from typing import Tuple, Dict, List
@@ -31,7 +34,7 @@ constants
 
 DATETIME_CONV = '%Y-%m-%d'
 LOG_DATETIME = '%Y%m%d%h%M%S'
-TZ = 'US/Eastern'
+
 '''
 logger
 '''
@@ -171,7 +174,7 @@ def get_query_dates(data: pandas.DataFrame) -> Tuple[datetime, datetime]:
     dt_now = datetime.now(tz = pytz.UTC)
 
     if data.empty:
-        dt_start = datetime(year = 1990, month = 1, day = 1, tzinfo = pytz.timezone(TZ))
+        dt_start = datetime(year = 1990, month = 1, day = 1, tzinfo = pytz.UTC)
     else:
         dt_start = data.index[-1] + timedelta(days = 1)
 
@@ -211,12 +214,10 @@ def get_data_from_api(start:datetime, end:datetime, token:str) -> pandas.DataFra
         data = response.json()
 
         # create dataframe
-        df_data = pandas.DataFrame(data = data)
-        tz = pytz.timezone(TZ)
-        td = timedelta(hours = 6)
-        index = df_data['date'].apply(lambda x: tz.localize(pandas.to_datetime(x)) + td)
-        df_data.index = index.tolist()
-        df_data = df_data[columns]
+        if data:
+            df_data = pandas.DataFrame(data = data)
+            df_data.index = df_data['date'].apply(lambda x: pandas.to_datetime(x)).tolist()
+            df_data = df_data[columns]
     except json.JSONDecodeError as jde:
         logger.error(f'{str(jde)}')
     except Exception as e:
@@ -361,7 +362,7 @@ def calc_balances(data:pandas.DataFrame, start_balance:float) -> Tuple[pandas.Da
 
         # add out balance
         if bool_first:
-            series_balances[:idx_buy] = balance
+            series_balances[:new_idx_buy] = balance
         else:
             out_idx_start = _get_next_idx(
                 index = data.index,
@@ -382,14 +383,110 @@ def calc_balances(data:pandas.DataFrame, start_balance:float) -> Tuple[pandas.Da
         if bool_first:
             bool_first = False
     
+    # calc sp500 balance on buy and hold
+    series_filter_shares = series_num_shares[series_num_shares != 0]
+    idx_first_buy = series_filter_shares.index[0]
+    shares_first_buy = series_filter_shares.iloc[0]
+    series_buy_hold_shares = pandas.Series(
+        data = [shares_first_buy for _ in range(0, len(data))],
+        index = data.index
+    )
+    series_buy_hold_shares[:idx_first_buy] = 0
+    series_buy_hold_balance = series_buy_hold_shares * data[col_close]
+    series_buy_hold_balance[series_buy_hold_balance == 0.] = start_balance
+
     # add new data
     dict_new_data = {
         'num_shares': series_num_shares,
-        'balance': series_balances
+        'balance': series_balances,
+        'buy_hold_shares': series_buy_hold_shares,
+        'buy_hold_balance': series_buy_hold_balance
     }
     data = data.assign(**dict_new_data)
 
     return data, new_idx_buys, new_idx_sells
+
+def create_plots(data:pandas.DataFrame, buys:List[pandas.Timestamp], sells:List[pandas.Timestamp]):
+    '''
+    create plots for visualizations
+
+    :param pandas.DataFrame data: data to plot
+    :param list buys: buys to plot as verticle lines
+    :param list sells: sells to plot as verticle lines
+    :return: None
+    '''
+    # set-up
+    fig:Figure = None
+    axes:List[Axes] = None
+    col_balance = 'balance'
+    col_bh_balance = 'buy_hold_balance'
+    col_50_ma = 'ema_50'
+    col_200_ma = 'ema_200'
+
+    # file
+    directory = 'visualizations'
+    file = data.index[-1].strftime(DATETIME_CONV) + '.png'
+    path = Path('..', directory, file)
+
+    # fig & axes (rows x columns)
+    fig, axes = pyplot.subplots(2, 1, sharex = True)
+    fig.set_size_inches(10., 7.)
+
+    # plot balances
+    x = data.index.tolist()
+    axes[0].plot(
+        x, data[col_balance], color = 'green', linewidth = 2.5, linestyle = '-',
+        label = f'SMA Balance ${data[col_balance].iloc[-1]:,.0f}'
+    )
+    axes[0].plot(
+        x, data[col_bh_balance], color = 'black', linewidth = 2.5, linestyle = '-',
+        label = f'Buy & Hold Balance ${data[col_bh_balance].iloc[-1]:,.0f}'
+    )
+    axes[0].set(title = 'Balances', ylabel = 'Dollars')
+
+    # plot sma values
+    axes[1].plot(
+        x, data[col_50_ma], color = 'blue', linewidth = 2.5, linestyle = '-',
+        label = '50 MA'
+    )
+    axes[1].plot(
+        x, data[col_200_ma], color = 'red', linewidth = 2.5, linestyle = '-',
+        label = '200 MA'
+    )
+    axes[1].set(title = 'Moving Averages', ylabel = 'Dollars')
+
+    # plot buys
+    for buy_val in buys[:-1]:
+        axes[0].axvline(buy_val, color = 'orangered', linewidth = 1, linestyle = '--')
+        axes[1].axvline(buy_val, color = 'orangered', linewidth = 1, linestyle = '--')
+    axes[0].axvline(buys[-1], color = 'orangered', linewidth = 1, linestyle = '--', 
+            label = 'Buy')
+    axes[1].axvline(buys[-1], color = 'orangered', linewidth = 1, linestyle = '--', 
+        label = 'Buy')
+    
+    # plot sells
+    if sells[-1].date() == datetime.now(tz = pytz.UTC).date():
+        final_plot_index = -2
+    else:
+        final_plot_index = -1
+    for sell_val in sells[:final_plot_index]:
+        axes[0].axvline(sell_val, color = 'indigo', linewidth = 1, linestyle = '--')
+        axes[1].axvline(sell_val, color = 'indigo', linewidth = 1, linestyle = '--')
+    axes[0].axvline(sells[final_plot_index], color = 'indigo', linewidth = 1, linestyle = '--', 
+            label = 'Sell')
+    axes[1].axvline(sells[final_plot_index], color = 'indigo', linewidth = 1, linestyle = '--', 
+        label = 'Sell')
+
+    # additional plot elements
+    axes[0].legend(loc = 'best')
+    axes[1].legend(loc = 'best')
+    pyplot.subplots_adjust(wspace = None, hspace = 0.4)
+    pyplot.suptitle('SP500 Analysis')
+
+    # save plot
+    fig.savefig(str(path))
+
+    return None
 
 '''
 main
@@ -400,20 +497,20 @@ def main():
     main function for SP500 analysis
     '''
     # setup
-    data_path_file = r'c:\Code\Prod\Sp500\data\data.parquet'
-    results_path_file = r'c:\Code\Prod\Sp500\data\results.parquet'
-    token_file_name = r'c:\Code\Prod\Sp500\src\sp_500_config.json'
+    data_path_file = Path('..', 'data', 'data.parquet')
+    results_path_file = Path('..', 'data', 'results.parquet')
+    token_file_name = Path('.', 'sp_500_config.json')
     token_key_name = 'tiingo_key'
     start_balance = 10000.
 
     # get tokens
     logger.info('getting tokens')
-    tokens = get_json_file(file_name = token_file_name)
+    tokens = get_json_file(file_name = str(token_file_name))
     logger.info('finished getting tokens')
 
     # get data
     logger.info('start get data')
-    df_file_data = get_data_file(path_file = data_path_file)
+    df_file_data = get_data_file(path_file = str(data_path_file))
     dt_start, dt_end = get_query_dates(data = df_file_data)
     df_api_data = get_data_from_api(start = dt_start, end = dt_end, token = tokens.get(token_key_name, ''))
     df_data = pandas.concat([df_file_data, df_api_data])
@@ -436,24 +533,37 @@ def main():
 
     # save data
     logger.info('save results')
-    df_data.to_parquet(path = results_path_file)
+    df_data.to_parquet(path = str(results_path_file))
     logger.info('finished saving results')
 
+    # create plots
+    logger.info('creating plot')
+    create_plots(data = df_data, buys = buys, sells = sells)
+    logger.info('finished creating plot')
+
+    # fig, ax = pyplot.subplots(1, 1)
+    # x = [x for x in range(0, len(df_data))]
+    # ax.plot(x, df_data['balance'], label = 'sma')
+    # ax.plot(x, df_data['buy_hold_balance'], label = 'bh')
+    # ax.legend(loc = 'best')
+    # fig.savefig(r'c:\Code\Prod\Sp500\plot.png')
+
     # debug
-    columns = ['in_out', 'perc_change', 'num_shares', 'balance']
     # print(df_data.info())
-    print(df_data.iloc[:10][columns], '\n')
-    print(df_data.iloc[195:205][columns], '\n')
-    print(df_data.iloc[-10:][columns], '\n')
-    print(df_data.iloc[-1]['balance'])
+    # columns = ['in_out', 'perc_change', 'num_shares', 'balance']
+    # filter_balace = df_data['balance'] == 0.
+    # print(filter_balace.sum())
+    # df_zero = df_data[filter_balace]
+    # idx_first_zero = df_zero.index[0]
+    # idx_int_first_zero = df_data.index.get_loc(idx_first_zero)
+    # print(df_data[['balance', 'in_out']].iloc[idx_int_first_zero - 5:idx_int_first_zero + 5])
+    # print(df_data.iloc[:10][columns], '\n')
+    # print(df_data.iloc[195:205][columns], '\n')
+    # print(df_data.iloc[-10:][columns], '\n')
+    # print(df_data.iloc[-1]['balance'])
     # print(df_data['change'].dropna())
 
-    fig, ax = pyplot.subplots(1, 1)
-    ax.plot(
-        [x for x in range(0, len(df_data))],
-        df_data['balance']
-    )
-    fig.savefig(r'c:\Code\Prod\Sp500\plot.png')
+    
 
     return None
 
